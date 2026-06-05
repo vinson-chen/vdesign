@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { TableContextValue, TableState, TableActions, TableData, ColumnDef, CellData, RowData, GroupedData } from "@/types/table"
+import type { TableContextValue, TableState, TableActions, TableData, ColumnDef, CellData, RowData, CellType } from "@/types/table"
 
 const TableContext = React.createContext<TableContextValue | null>(null)
 
@@ -234,7 +234,7 @@ function TableProvider({ data, children }: TableProviderProps) {
     setRows((prev) =>
       prev.map((row) => ({
         ...row,
-        cells: row.cells.filter((cell, i) => i !== index),
+        cells: row.cells.filter((_, i) => i !== index),
       }))
     )
   }, [columns])
@@ -311,7 +311,7 @@ function TableProvider({ data, children }: TableProviderProps) {
   }, [])
 
   // 全选/取消全选某个分组
-  const toggleGroupSelect = React.useCallback((groupValue: string, groupRows: RowData[]) => {
+  const toggleGroupSelect = React.useCallback((_groupValue: string, groupRows: RowData[]) => {
     const groupRowIds = groupRows.map(row => row.id)
     const allSelected = groupRowIds.every(id => selectedRows.has(id))
 
@@ -354,7 +354,7 @@ function TableProvider({ data, children }: TableProviderProps) {
     columns: columns.filter((col) => !hiddenColumns.has(col.id)),
     rows: rows.map((row) => ({
       ...row,
-      cells: row.cells.filter((cell, i) => !hiddenColumns.has(columns[i]?.id)),
+      cells: row.cells.filter((_, i) => !hiddenColumns.has(columns[i]?.id ?? "")),
     })),
   }
 

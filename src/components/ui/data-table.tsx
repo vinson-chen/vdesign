@@ -11,7 +11,6 @@ import {
   PopoverTrigger,
   PopoverContent,
   PopoverMenuItem,
-  PopoverLabel,
   PopoverSeparator,
   PopoverContext,
 } from "./popover"
