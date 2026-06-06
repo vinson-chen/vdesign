@@ -16,6 +16,8 @@ interface EditField {
   defaultValue?: string
   onChange?: (value: string) => void
   placeholder?: string
+  autoFocus?: boolean
+  selectOnFocus?: boolean
   options?: { value: string; label: string }[] // for select
 }
 
@@ -32,6 +34,9 @@ function PopoverEditContent({ size = "base", fields }: PopoverEditContentProps) 
     lg: "px-3 pb-1.5",
   }[size]
 
+  // 跟踪已自动选中的字段，确保只在首次聚焦时选中文本
+  const autoSelectedRef = React.useRef<Set<number>>(new Set())
+
   return (
     <>
       {fields.map((field, index) => (
@@ -46,6 +51,13 @@ function PopoverEditContent({ size = "base", fields }: PopoverEditContentProps) 
                 defaultValue={field.defaultValue}
                 onChange={(e) => field.onChange?.(e.target.value)}
                 placeholder={field.placeholder}
+                autoFocus={field.autoFocus}
+                onFocus={field.selectOnFocus ? (e) => {
+                  if (!autoSelectedRef.current.has(index)) {
+                    autoSelectedRef.current.add(index)
+                    ;(e.target as HTMLInputElement).select()
+                  }
+                } : undefined}
                 className="w-full"
               />
             </div>

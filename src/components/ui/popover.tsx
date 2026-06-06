@@ -5,7 +5,7 @@ import { cn, popoverItemVariants, popoverItemGapMap, PopoverContext, PopoverSubC
 
 function Popover({ children, ...props }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
   const [open, setOpen] = React.useState(props.open ?? false)
-  const close = () => setOpen(false)
+  const close = () => handleOpenChange(false)
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)

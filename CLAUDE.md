@@ -51,6 +51,10 @@ export { Component, componentVariants }
 
 使用 Tailwind 默认断点：`sm`(640px)、`md`(768px)、`lg`(1024px)、`xl`(1280px)
 
+## 表格组件规范
+
+修改 `src/components/ui/data-table.tsx` 或表头交互行为前，必须先阅读 `docs/table-interactions.md`。
+
 ## Demo 页面布局规范
 
 每个页面由多个 section 组成，遵循以下间距规则：
