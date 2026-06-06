@@ -5,6 +5,7 @@ import { defineConfig } from "vite"
 
 // 开发服务器配置（demo 预览）
 export default defineConfig({
+  base: "/vdesign/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

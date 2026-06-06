@@ -9,7 +9,9 @@ const cellVariants = cva(
       variant: {
         default: "bg-white-100 hover:bg-neutral-1",
         selected: "bg-brand-1 hover:bg-brand-2",
+        editing: "bg-success-2",
         header: "bg-neutral-1 hover:bg-neutral-2 font-medium has-[[data-state=open]]:bg-neutral-2",
+        headerSelected: "bg-neutral-2 font-medium",
       },
     },
     defaultVariants: {

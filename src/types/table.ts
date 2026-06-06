@@ -70,6 +70,8 @@ export interface TableState {
   groupColumnId: string | null
   // 收起的分组
   collapsedGroups: Set<string>
+  // 选中列
+  selectedColumnId: string | null
 }
 
 // 表格操作
@@ -97,6 +99,12 @@ export interface TableActions {
   setGroupColumn: (columnId: string | null) => void
   toggleGroupCollapse: (groupValue: string) => void
   toggleGroupSelect: (groupValue: string, groupRows: RowData[]) => void
+  insertRowInGroup: (groupValue: string, groupColumnId: string) => void
+  updateGroupValues: (oldGroupValue: string, newGroupValue: string, groupColumnId: string) => void
+  // 列选中操作
+  selectColumn: (columnId: string | null) => void
+  // 列顺序操作
+  moveColumnOrder: (sourceColumnId: string, targetColumnId: string, insertPosition: 'left' | 'right') => void
 }
 
 // 表格 Context 类型

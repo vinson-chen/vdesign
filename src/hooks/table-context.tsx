@@ -49,6 +49,8 @@ function TableProvider({ data, children }: TableProviderProps) {
 
   // 选择状态
   const [selectedRows, setSelectedRows] = React.useState<Set<string>>(new Set())
+  // 选中列
+  const [selectedColumnId, setSelectedColumnId] = React.useState<string | null>(null)
 
   // 编辑状态
   const [editingCellId, setEditingCellId] = React.useState<string | null>(null)
@@ -295,6 +297,7 @@ function TableProvider({ data, children }: TableProviderProps) {
     frozenColumns,
     groupColumnId,
     collapsedGroups,
+    selectedColumnId,
   }
 
   // 切换分组展开/收起
@@ -328,6 +331,108 @@ function TableProvider({ data, children }: TableProviderProps) {
     })
   }, [selectedRows])
 
+  // 在分组内插入新行
+  const insertRowInGroup = React.useCallback((groupValue: string, groupColumnId: string) => {
+    const groupRowIndex = columns.findIndex(col => col.id === groupColumnId)
+    if (groupRowIndex === -1) return
+
+    const newRowId = generateId()
+    const newCells: CellData[] = columns.map((col) => ({
+      id: `${newRowId}-${col.id}`,
+      type: col.type === "checkbox" ? "checkbox" : "text",
+      value: col.id === groupColumnId ? groupValue : (col.type === "checkbox" ? false : ""),
+      width: col.width === "auto" ? 40 : col.width ?? 200,
+    }))
+
+    // 找到该组最后一个行的索引，插入到其后
+    let insertIndex = rows.length
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const row = rows[i]
+      const cell = row?.cells[groupRowIndex]
+      const rowGroupValue = cell ? String(cell.value ?? "") : ""
+      if (rowGroupValue === groupValue) {
+        insertIndex = i + 1
+        break
+      }
+    }
+
+    setRows((prev) => {
+      const newRows = [...prev]
+      newRows.splice(insertIndex, 0, { id: newRowId, cells: newCells })
+      return newRows
+    })
+  }, [columns, rows])
+
+  // 更新分组标题（同步更新该组所有行的分组列单元格）
+  const updateGroupValues = React.useCallback((oldGroupValue: string, newGroupValue: string, groupColumnId: string) => {
+    const groupRowIndex = columns.findIndex(col => col.id === groupColumnId)
+    if (groupRowIndex === -1) return
+
+    setRows((prev) =>
+      prev.map((row) => {
+        const cell = row.cells[groupRowIndex]
+        const cellValue = cell ? String(cell.value ?? "") : ""
+        if (cellValue === oldGroupValue && cell) {
+          const newCells = [...row.cells]
+          newCells[groupRowIndex] = { ...cell, value: newGroupValue }
+          return { ...row, cells: newCells }
+        }
+        return row
+      })
+    )
+  }, [columns])
+
+  // 选中列
+  const selectColumn = React.useCallback((columnId: string | null) => {
+    setSelectedColumnId(columnId)
+    // 选中列时清空选中行（互斥）
+    if (columnId) {
+      setSelectedRows(new Set())
+    }
+  }, [])
+
+  // 移动列顺序
+  const moveColumnOrder = React.useCallback((sourceColumnId: string, targetColumnId: string, insertPosition: 'left' | 'right') => {
+    const sourceIndex = columns.findIndex(col => col.id === sourceColumnId)
+    const targetIndex = columns.findIndex(col => col.id === targetColumnId)
+    if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) return
+
+    // 计算最终插入位置
+    const toIndex = insertPosition === 'right' ? targetIndex + 1 : targetIndex
+    // 向右拖：toIndex - 1（因为移除源列后索引会位移）
+    // 向左拖：toIndex 保持
+    const finalToIndex = toIndex > sourceIndex ? toIndex - 1 : toIndex
+    // 相邻且方向一致时不操作
+    if (finalToIndex === sourceIndex) return
+
+    const sIdx = sourceIndex
+
+    // 移动列
+    setColumns((prev) => {
+      const newColumns = [...prev]
+      const removed = newColumns[sIdx]
+      if (!removed) return prev
+      newColumns.splice(sIdx, 1)
+      newColumns.splice(finalToIndex, 0, removed)
+      return newColumns
+    })
+
+    // 移动所有行中对应的单元格
+    setRows((prev) =>
+      prev.map((row) => {
+        const newCells = [...row.cells]
+        const removed = newCells[sIdx]
+        if (!removed) return row
+        newCells.splice(sIdx, 1)
+        newCells.splice(finalToIndex, 0, removed)
+        return { ...row, cells: newCells }
+      })
+    )
+
+    // 保持选中列（跟随移动）
+    setSelectedColumnId(sourceColumnId)
+  }, [columns])
+
   const actions: TableActions = {
     toggleSelectAll,
     toggleRowSelect,
@@ -347,6 +452,10 @@ function TableProvider({ data, children }: TableProviderProps) {
     setGroupColumn,
     toggleGroupCollapse,
     toggleGroupSelect,
+    insertRowInGroup,
+    updateGroupValues,
+    selectColumn,
+    moveColumnOrder,
   }
 
   // 过滤隐藏列后的数据

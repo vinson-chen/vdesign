@@ -224,3 +224,8 @@
     font-family: var(--font-sans);
   }
 }
+
+/* 拖拽列宽期间禁用整个表格的悬停态 */
+[data-slot="data-table"][data-resizing="true"] [data-slot="cell"] {
+  pointer-events: none !important;
+}
