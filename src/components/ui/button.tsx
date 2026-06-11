@@ -13,14 +13,10 @@ const buttonVariants = cva(
           "border-neutral-2 bg-white-100 text-black-85 hover:bg-neutral-1 active:bg-neutral-1 data-[state=open]:bg-neutral-1",
         ghost:
           "bg-transparent text-black-85 hover:bg-black-5 active:bg-black-5 data-[state=open]:bg-black-5",
-        cell:
-          "bg-transparent text-black-85 rounded-none",
         destructive:
           "bg-error-1 text-error-5 hover:bg-error-2 active:bg-error-2 data-[state=open]:bg-error-2",
         link:
           "bg-transparent text-brand-5 hover:text-brand-6 active:text-brand-6",
-        disabled:
-          "border-neutral-2 bg-neutral-1 text-black-25 cursor-not-allowed",
       },
       size: {
         sm: "h-6 rounded-md px-1.5 text-xs leading-5 gap-1 [&_svg]:size-[14px]",
@@ -29,22 +25,37 @@ const buttonVariants = cva(
         iconSm: "size-6 rounded-md gap-0 [&_svg]:size-[14px]",
         iconBase: "size-8 rounded-lg gap-0 [&_svg]:size-4",
         iconLg: "size-10 rounded-xl gap-0 [&_svg]:size-[18px]",
-        cellSm: "px-0 h-5 text-xs leading-5 gap-1 [&_svg]:size-[14px]",
-        cellBase: "px-0 h-6 text-sm leading-6 gap-1.5 [&_svg]:size-4",
-        cellLg: "px-0 h-6 text-base leading-6 gap-2 [&_svg]:size-[18px]",
-        cellIconSm: "p-0 size-4 gap-0 [&_svg]:size-[14px]",
-        cellIconBase: "p-0 size-6 gap-0 [&_svg]:size-4",
-        cellIconLg: "p-0 size-6 gap-0 [&_svg]:size-[18px]",
       },
       noShift: {
         true: "",
         false: "active:translate-y-px data-[state=open]:active:translate-y-0",
       },
     },
+    compoundVariants: [
+      // primary / outline / destructive disabled: gray bg + gray border
+      {
+        variant: ["primary", "outline", "destructive"],
+        disabled: true,
+        class: "border-neutral-2 bg-neutral-1 text-black-25 hover:bg-neutral-1 hover:text-black-25 active:bg-neutral-1 active:text-black-25 active:translate-y-0",
+      },
+      // ghost disabled: gray text, keep space
+      {
+        variant: "ghost",
+        disabled: true,
+        class: "text-black-25 hover:text-black-25 hover:bg-transparent active:text-black-25 active:bg-transparent active:translate-y-0",
+      },
+      // link disabled: gray text, no interaction
+      {
+        variant: "link",
+        disabled: true,
+        class: "text-black-25 hover:text-black-25 active:text-black-25 active:translate-y-0",
+      },
+    ],
     defaultVariants: {
       variant: "primary",
       size: "base",
       noShift: false,
+      disabled: false,
     },
   }
 )
@@ -54,6 +65,7 @@ function Button({
   variant,
   size,
   noShift,
+  disabled,
   leftIcon,
   rightIcon,
   children,
@@ -65,7 +77,8 @@ function Button({
   }) {
   return (
     <button
-      className={cn(buttonVariants({ variant, size, noShift, className }))}
+      disabled={disabled}
+      className={cn(buttonVariants({ variant, size, noShift, disabled, className }))}
       {...props}
     >
       {leftIcon && (

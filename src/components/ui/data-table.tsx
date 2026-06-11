@@ -1,8 +1,8 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-import { TableProvider, useTable } from "@/hooks"
-import type { TableData, CellType, GroupedData, RowData } from "@/types/table"
+import { TableProvider, useTable, useTableData, useTableState, useTableActions, useFirstDataColumn, CellRenderersContext } from "@/hooks"
+import type { TableData, CellType, GroupedData, RowData, ColumnDef, CellRendererRegistry, SelectOptionItem } from "@/types/table"
 import { Cell } from "./cell"
 import { Checkbox } from "./checkbox"
 import { Button } from "./button"
@@ -14,21 +14,17 @@ import {
   PopoverSeparator,
   PopoverContext,
 } from "./popover"
-import { PopoverEditContent } from "./popover-edit-content"
-import { Input } from "./input"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "./select"
+import { HeaderCellMenuView } from "./header-cell-menu"
+import { HeaderCellEditView } from "./header-cell-edit"
+import { HeaderCellHideManagerView } from "./header-cell-hide-manager"
+import { HeaderCellDimensionView } from "./header-cell-dimension"
+import { defaultCellRenderers, TextCellRenderer } from "./cell-renderers"
 
-const tableVariants = cva("flex w-max min-w-full flex-col bg-white-100 border-neutral-2 border-l border-t border-r relative", {
+const tableVariants = cva("flex w-max min-w-full flex-col relative", {
   variants: {
     variant: {
-      base: "",
-      plain: "border-0",
+      base: "border border-neutral-2 bg-white-100",
+      plain: "",
     },
   },
   defaultVariants: {
@@ -43,194 +39,127 @@ interface CellContentProps {
   rowId?: string
   isHeader?: boolean
   columnId?: string
+  rowIndex?: number
+  cellOptions?: Record<string, unknown>
+  isCellHovering?: boolean
 }
 
 // 表头文本单元格内部组件（访问 Popover Context）
-function HeaderTextCellInner({ cellId, value, columnId, currentColumnType, editView, setEditView, onDoubleClickTitle }: {
+function HeaderTextCellInner({ cellId, value, columnId, currentColumnType, editView, setEditView, hideColumnView, setHideColumnView, dimensionView, setDimensionView, onDoubleClickTitle }: {
   cellId: string
   value: string | boolean | number
   columnId?: string
   currentColumnType: CellType
   editView: boolean
   setEditView: (v: boolean) => void
+  hideColumnView: boolean
+  setHideColumnView: (v: boolean) => void
+  dimensionView: boolean
+  setDimensionView: (v: boolean) => void
   onDoubleClickTitle: () => void
 }) {
-  const { state, actions } = useTable()
+  const state = useTableState()
+  const actions = useTableActions()
+  const data = useTableData()
   const { close, isOpen } = React.useContext(PopoverContext)
-  const [editedTitle, setEditedTitle] = React.useState(String(value))
-  const [editedType, setEditedType] = React.useState<CellType>("text")
-
-  // 打开编辑视图时同步状态
-  React.useEffect(() => {
-    if (editView) {
-      setEditedTitle(String(value))
-      setEditedType(currentColumnType)
-    }
-  }, [editView, value, currentColumnType])
-
-  // 保存修改
-  const handleSave = () => {
-    // 保存标题
-    if (editedTitle !== String(value) && columnId) {
-      actions.updateColumnTitle(columnId, editedTitle)
-    }
-    // 保存列类型
-    if (columnId && editedType !== currentColumnType) {
-      actions.updateColumnType(columnId, editedType)
-    }
-    close()
-  }
-
-  // 取消修改
-  const handleCancel = () => {
-    close()
-  }
+  const { isFirstDataColumn, firstDataColumnId } = useFirstDataColumn(columnId)
+  // 使用 columnMap O(1) 查找，替代 Array.find() O(n)
+  const currentColumnDef = columnId ? data.columnMap?.get(columnId) : undefined
 
   return (
     <>
       <span
         className="truncate cursor-pointer flex-1"
-        onDoubleClick={onDoubleClickTitle}
+        onDoubleClick={state.readOnly ? undefined : onDoubleClickTitle}
       >
         {String(value)}
       </span>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="iconSm"
-          leftIcon="icon-chevron-down"
-          className={cn(
-            "transition-opacity",
-            isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-          )}
-          onClick={(e) => {
-            e.stopPropagation()
-            if (state.selectedColumnId === columnId) {
-              actions.selectColumn(null)
-            }
-          }}
-          onDoubleClick={(e) => e.stopPropagation()}
-        />
-      </PopoverTrigger>
-      <PopoverContent size="base" align="end" alignOffset={-8} className="w-[200px]">
-        <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-        {/* 菜单视图 */}
-        <div className={editView ? "hidden" : ""}>
-          <PopoverMenuItem size="base" onClick={() => {
-            if (columnId && state.selectedColumnId !== columnId) {
-              actions.selectColumn(columnId)
-            }
-            setEditView(true)
-          }}>
-            <div className="flex items-center gap-2">
-              <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-edit" /></svg>
-              <span className="text-sm text-black-85">编辑列</span>
-            </div>
-          </PopoverMenuItem>
-          <PopoverMenuItem size="base" closeOnClick onClick={() => columnId && actions.hideColumn(columnId)}>
-            <div className="flex items-center gap-2">
-              <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-browse-off" /></svg>
-              <span className="text-sm text-black-85">隐藏列</span>
-            </div>
-          </PopoverMenuItem>
-          <PopoverSeparator />
-          <PopoverMenuItem size="base" closeOnClick onClick={() => columnId && actions.insertColumnLeft(columnId)}>
-            <div className="flex items-center gap-2">
-              <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-arrow-left" /></svg>
-              <span className="text-sm text-black-85">向左插入列</span>
-            </div>
-          </PopoverMenuItem>
-          <PopoverMenuItem size="base" closeOnClick onClick={() => columnId && actions.insertColumnRight(columnId)}>
-            <div className="flex items-center gap-2">
-              <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-arrow-right" /></svg>
-              <span className="text-sm text-black-85">向右插入列</span>
-            </div>
-          </PopoverMenuItem>
-          <PopoverMenuItem size="base" closeOnClick onClick={() => columnId && actions.freezeColumns(columnId)}>
-            <div className="flex items-center gap-2">
-              <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-grid-column" /></svg>
-              <span className="text-sm text-black-85">冻结到此列</span>
-            </div>
-          </PopoverMenuItem>
-          <PopoverMenuItem size="base" closeOnClick onClick={() => columnId && actions.setGroupColumn(state.groupColumnId === columnId ? null : columnId)}>
-            <div className="flex items-center gap-2">
-              <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-form" /></svg>
-              <span className="text-sm text-black-85">{state.groupColumnId === columnId ? "取消分组" : "设为分组标题"}</span>
-            </div>
-          </PopoverMenuItem>
-          <PopoverSeparator />
-          <PopoverMenuItem size="base" closeOnClick onClick={() => columnId && actions.deleteColumn(columnId)} className="text-error-5 hover:bg-error-1 focus:bg-error-1 active:bg-error-2">
-            <div className="flex items-center gap-2">
-              <svg className="icon text-error-5" aria-hidden="true"><use xlinkHref="#icon-delete" /></svg>
-              <span className="text-sm">删除列</span>
-            </div>
-          </PopoverMenuItem>
-        </div>
-        {/* 编辑视图 */}
-        <div className={editView ? "" : "hidden"}>
-          <PopoverEditContent
-            size="base"
-            fields={[
-              {
-                label: "标题",
-                type: "input",
-                value: editedTitle,
-                onChange: setEditedTitle,
-                placeholder: "输入列标题",
-                autoFocus: true,
-                selectOnFocus: true,
-              },
-              {
-                label: "列类型",
-                type: "select",
-                value: editedType,
-                onChange: (v) => setEditedType(v as CellType),
-                placeholder: "选择列类型",
-                options: [
-                  { value: "text", label: "文本列" },
-                  { value: "input", label: "输入列" },
-                  { value: "select", label: "单选列" },
-                  { value: "button", label: "按钮列" },
-                ],
-              },
-            ]}
+      {!state.readOnly && (
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="iconSm"
+            leftIcon="icon-chevron-down"
+            className={cn(
+              "transition-opacity",
+              isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (state.selectedColumnId === columnId) {
+                actions.selectColumn(null)
+              }
+              if (state.lockedCellId) {
+                actions.lockCell(null)
+              }
+            }}
+            onDoubleClick={(e) => e.stopPropagation()}
           />
-          <PopoverSeparator />
-          <div className="flex gap-2 px-2 py-1.5">
-            <Button variant="outline" size="base" className="flex-1" onClick={handleCancel}>取消</Button>
-            <Button variant="primary" size="base" className="flex-1" onClick={handleSave}>保存</Button>
+        </PopoverTrigger>
+      )}
+      {!state.readOnly && (
+        <PopoverContent size="base" align="end" alignOffset={-8} sideOffset={8} className="w-[200px]">
+          <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+            {!editView && !hideColumnView && !dimensionView && (
+              <HeaderCellMenuView
+                columnId={columnId}
+                isFirstDataColumn={isFirstDataColumn}
+                groupColumnId={state.groupColumnId}
+                onEdit={() => setEditView(true)}
+                onHideManager={() => setHideColumnView(true)}
+                onDimension={() => setDimensionView(true)}
+              />
+            )}
+            {editView && (
+              <HeaderCellEditView
+                columnId={columnId}
+                value={value}
+                currentColumnType={currentColumnType}
+                currentColumnDef={currentColumnDef}
+                onClose={close}
+              />
+            )}
+            {hideColumnView && (
+              <HeaderCellHideManagerView firstDataColumnId={firstDataColumnId} />
+            )}
+            {dimensionView && (
+              <HeaderCellDimensionView />
+            )}
           </div>
-        </div>
-        </div>
-      </PopoverContent>
+        </PopoverContent>
+      )}
     </>
   )
 }
 
 // 表头文本单元格组件（带菜单）
 function HeaderTextCell({ cellId, value, columnId }: { cellId: string; value: string | boolean | number; columnId?: string }) {
-  const { data, state, actions } = useTable()
+  const data = useTableData()
+  const state = useTableState()
+  const actions = useTableActions()
   const [editView, setEditView] = React.useState(false)
+  const [hideColumnView, setHideColumnView] = React.useState(false)
+  const [dimensionView, setDimensionView] = React.useState(false)
   const [open, setOpen] = React.useState(false)
   const isHeaderPopoverOpenRef = React.useContext(HeaderPopoverOpenRefContext)
 
-  // 获取当前列类型
+  // 获取当前列类型 — 使用 columnMap O(1) 查找
   const currentColumnType = columnId
-    ? data.columns.find(col => col.id === columnId)?.type ?? "text"
+    ? data.columnMap?.get(columnId)?.type ?? "text"
     : "text"
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
-    if (newOpen) setEditView(false)
+    if (newOpen) {
+      setEditView(false)
+      setHideColumnView(false)
+      setDimensionView(false)
+    }
     // 标记面板开关状态，确保取消选中逻辑被阻断
     if (isHeaderPopoverOpenRef) isHeaderPopoverOpenRef.current = newOpen
   }
 
   const handleDoubleClick = () => {
-    // 双击打开编辑面板时选中列
-    if (columnId && state.selectedColumnId !== columnId) {
-      actions.selectColumn(columnId)
-    }
     if (isHeaderPopoverOpenRef) isHeaderPopoverOpenRef.current = true
     setOpen(true)
     setEditView(true)
@@ -245,124 +174,99 @@ function HeaderTextCell({ cellId, value, columnId }: { cellId: string; value: st
         currentColumnType={currentColumnType}
         editView={editView}
         setEditView={setEditView}
+        hideColumnView={hideColumnView}
+        setHideColumnView={setHideColumnView}
+        dimensionView={dimensionView}
+        setDimensionView={setDimensionView}
         onDoubleClickTitle={handleDoubleClick}
       />
     </Popover>
   )
 }
 
-function CellContent({ cellId, type, value, rowId, isHeader, columnId }: CellContentProps) {
-  const { state, actions } = useTable()
-  const isSelected = rowId ? state.selectedRows.has(rowId) : false
+function CellContent({ cellId, type, value, rowId, isHeader, columnId, rowIndex, cellOptions, isCellHovering }: CellContentProps) {
+  const state = useTableState()
+  const actions = useTableActions()
+  const data = useTableData()
+  const cellRenderers = React.useContext(CellRenderersContext)
+  // 表头 checkbox 单元格内部悬停状态
+  const [isHeaderCheckboxHovering, setIsHeaderCheckboxHovering] = React.useState(false)
 
-  switch (type) {
-    case "checkbox":
-      return (
-        <Checkbox
-          checked={rowId ? isSelected : state.selectAll}
-          onChange={() => {
-            if (rowId) {
-              actions.toggleRowSelect(rowId)
-            } else {
-              actions.toggleSelectAll()
-            }
-          }}
-        />
-      )
-
-    case "select":
-      return (
-        <div className="min-w-0 flex-1">
-          <Select>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={String(value) || "请选择"} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="option1">选项一</SelectItem>
-              <SelectItem value="option2">选项二</SelectItem>
-              <SelectItem value="option3">选项三</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )
-
-    case "input":
-      return (
-        <div className="min-w-0 flex-1">
-          <Input className="w-full" placeholder={String(value) || "请输入"} variant="basic" size="base" />
-        </div>
-      )
-
-    case "button":
-      return (
-        <Button variant="outline" size="base">
-          {String(value) || "按钮"}
-        </Button>
-      )
-
-    case "icon":
-      return (
-        <Button variant="cell" size="cellIconBase" leftIcon={String(value)} />
-      )
-
-    case "editable":
-      if (state.editingCellId === cellId) {
-        return (
-          <input
-            type="text"
-            value={state.editingValue}
-            onChange={(e) => actions.updateEditingValue(e.target.value)}
-            onBlur={actions.finishEdit}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") actions.finishEdit()
-              if (e.key === "Escape") actions.cancelEdit()
-            }}
-            className="absolute inset-0 bg-transparent border-none outline-none p-0 text-inherit font-inherit overflow-hidden"
-            autoFocus
+  // 表头 checkbox → 默认显示 icon，悬停或全选时显示 checkbox
+  if (isHeader && type === "checkbox") {
+    const showCheckbox = isHeaderCheckboxHovering || state.selectAll
+    return (
+      <div
+        className="flex items-center justify-center w-full h-full"
+        onMouseEnter={() => setIsHeaderCheckboxHovering(true)}
+        onMouseLeave={() => setIsHeaderCheckboxHovering(false)}
+      >
+        {showCheckbox ? (
+          <Checkbox
+            checked={state.selectAll}
+            onChange={() => actions.toggleSelectAll()}
           />
-        )
-      }
-      return (
-        <span
-          className="block truncate min-h-6 cursor-pointer"
-          onDoubleClick={() => actions.startEdit(cellId, String(value))}
-        >
-          {String(value) || " "}
-        </span>
-      )
-
-    case "text":
-    default:
-      if (isHeader) {
-        return <HeaderTextCell cellId={cellId} value={value} columnId={columnId} />
-      }
-      // 非表头文本单元格支持双击编辑（沿用表头编辑态样式）
-      if (state.editingCellId === cellId) {
-        return (
-          <input
-            type="text"
-            value={state.editingValue}
-            onChange={(e) => actions.updateEditingValue(e.target.value)}
-            onBlur={actions.finishEdit}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") actions.finishEdit()
-              if (e.key === "Escape") actions.cancelEdit()
-            }}
-            onFocus={(e) => e.target.select()}
-            className="absolute inset-0 bg-transparent border-none outline-none p-2 text-inherit font-inherit overflow-hidden"
-            autoFocus
-          />
-        )
-      }
-      return (
-        <span
-          className="flex-1 w-full min-h-6 cursor-pointer truncate"
-          onDoubleClick={() => actions.startEdit(cellId, String(value))}
-        >
-          {String(value) || " "}
-        </span>
-      )
+        ) : (
+          <svg className="icon text-black-25" aria-hidden="true"><use xlinkHref="#icon-vcell-logo" /></svg>
+        )}
+      </div>
+    )
   }
+
+  // 表头文本单元格 → 仍由表格内部处理
+  if (isHeader) {
+    return <HeaderTextCell cellId={cellId} value={value} columnId={columnId} />
+  }
+
+  // 表体 checkbox → 默认显示序号，选中时显示 checkbox
+  if (type === "checkbox") {
+    const isSelected = rowId ? state.selectedRows.has(rowId) : false
+    const showCheckbox = isCellHovering || isSelected
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        {showCheckbox ? (
+          <Checkbox
+            checked={isSelected}
+            onChange={() => {
+              if (rowId) {
+                actions.toggleRowSelect(rowId)
+              }
+            }}
+          />
+        ) : (
+          <span className="text-sm text-black-25">{rowIndex ?? 1}</span>
+        )}
+      </div>
+    )
+  }
+
+  // 表体单元格 → 查找渲染器
+  const Renderer = cellRenderers[type] || TextCellRenderer
+  // 使用 columnMap O(1) 查找，替代 Array.find() O(n)
+  const columnDef = columnId ? data.columnMap?.get(columnId) : undefined
+
+  // 合并 options：单元格级优先于列级
+  const mergedOptions = cellOptions ? { ...columnDef?.options, ...cellOptions } : columnDef?.options
+
+  return (
+    <Renderer
+      value={value}
+      cellId={cellId}
+      rowId={rowId!}
+      columnId={columnId!}
+      onChange={(newValue: unknown) => actions.updateCellValue(cellId, newValue)}
+      isEditing={state.editingCellId === cellId}
+      isCellHovering={isCellHovering}
+      readOnly={state.readOnly}
+      onStartEdit={() => actions.startEdit(cellId, String(value))}
+      options={mergedOptions}
+      editingValue={state.editingValue}
+      onUpdateEditingValue={actions.updateEditingValue}
+      onFinishEdit={actions.finishEdit}
+      onCancelEdit={actions.cancelEdit}
+      onUpdateColumnOptions={(newOptions) => actions.updateColumnOptions(columnId!, newOptions)}
+    />
+  )
 }
 
 interface CellDef {
@@ -380,39 +284,41 @@ interface RowDef {
 interface RowRendererProps {
   row: RowDef
   isHeader?: boolean
+  isLastRow?: boolean
   columnIds?: string[]
+  rowIndex?: number
   onCellResizeStart?: (columnId: string, startWidth: number, startX: number) => void
   onCellHoverEdge?: (columnId: string | null) => void
   onHeaderCellClick?: (columnId: string, cellType: string, e: React.MouseEvent) => void
   onHeaderCellMouseDown?: (columnId: string, e: React.MouseEvent) => void
   draggingColumnId?: string | null
+  onCellHover?: (cellId: string | null) => void
+  hoveringCellId?: string | null
+  onBodyCellClick?: (cellId: string, e: React.MouseEvent) => void
+  // 性能优化：由父级预计算，避免每行重复计算
+  frozenOffsets?: Record<string, number>
+  frozenWidth?: number
+  rowWidth?: number
+  // 虚拟化支持
+  style?: React.CSSProperties
+  // 分组模式下分组列ID（用于表头顶部描边）
+  groupColumnId?: string
 }
 
-function RowRenderer({ row, isHeader, columnIds, onCellResizeStart, onCellHoverEdge, onHeaderCellClick, onHeaderCellMouseDown, draggingColumnId }: RowRendererProps) {
-  const { state } = useTable()
+// Memo 化 RowRenderer：避免父组件 hover 等状态变化时全量重渲染
+const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, columnIds, rowIndex, onCellResizeStart, onCellHoverEdge, onHeaderCellClick, onHeaderCellMouseDown, draggingColumnId, onCellHover, hoveringCellId, onBodyCellClick, frozenOffsets = {}, frozenWidth = 0, rowWidth: rowWidthProp, style, groupColumnId }: RowRendererProps) {
+  const state = useTableState()
+  const data = useTableData()
+  const actions = useTableActions()
   const isSelected = !isHeader && state.selectedRows.has(row.id)
 
-  // 使用实际列宽计算行宽
-  const rowWidth = row.cells.reduce((sum, cell, index) => {
-    const columnId = columnIds?.[index] ?? cell.id
-    const width = state.columnWidths[columnId] ?? (cell.width === 'auto' ? 40 : cell.width) ?? 80
+  // 行宽由父级预计算传入，仅表头需要在组件内 fallback
+  const rowWidth = rowWidthProp ?? row.cells.reduce((sum, cell, index) => {
+    const cid = columnIds?.[index] ?? cell.id
+    const columnDef = data.columns[index]
+    const width = state.columnWidths[cid] ?? columnDef?.width ?? (cell.width === 'auto' ? 40 : cell.width) ?? 80
     return sum + width
   }, 0)
-
-  // 计算冻结列的累积偏移
-  const frozenOffsets: Record<string, number> = {}
-  let frozenAccum = 0
-  row.cells.forEach((cell, index) => {
-    const columnId = columnIds?.[index] ?? cell.id
-    if (state.frozenColumns.has(columnId)) {
-      frozenOffsets[columnId] = frozenAccum
-      const width = state.columnWidths[columnId] ?? (cell.width === 'auto' ? 40 : cell.width) ?? 80
-      frozenAccum += width
-    }
-  })
-
-  // 冻结列总宽度
-  const frozenWidth = frozenAccum
 
   return (
     <div
@@ -421,30 +327,35 @@ function RowRenderer({ row, isHeader, columnIds, onCellResizeStart, onCellHoverE
         "flex border-b border-neutral-2",
         isSelected && "bg-brand-1"
       )}
-      style={{ width: `${rowWidth}px` }}
+      style={style ?? { minWidth: `${rowWidth}px`, width: (isHeader && !state.readOnly) ? '100%' : `${rowWidth}px` }}
     >
       {row.cells.map((cell, index) => {
         const columnId = columnIds?.[index] ?? cell.id
-        const width = state.columnWidths[columnId] ?? (cell.width === 'auto' ? 40 : cell.width) ?? 80
-        const isLast = index === row.cells.length - 1
+        const columnDef = data.columns[index]
+        // 单元格属性：优先从 CellData 获取，否则从 ColumnDef 继承
+        const cellType = cell.type ?? columnDef?.type ?? "text"
+        const cellWidth = state.columnWidths[columnId] ?? columnDef?.width ?? (cell.width === 'auto' ? 40 : cell.width) ?? 80
         const isFrozen = state.frozenColumns.has(columnId)
         const frozenLeft = frozenOffsets[columnId] ?? 0
-        const isLastFrozen = isFrozen && frozenLeft + width === frozenWidth
+        const isLastFrozen = isFrozen && frozenLeft + cellWidth === frozenWidth
 
-        const isEditing = !isHeader && state.editingCellId === cell.id && cell.type === "text"
+        const isEditing = !isHeader && state.editingCellId === cell.id && cellType === "text"
         const isColumnSelected = state.selectedColumnId === columnId
-
-        // 拖拽态判断（仅用于光标）
+        const isLocked = !isHeader && state.lockedCellId === cell.id
+        const isCellHovering = !isHeader && hoveringCellId === cell.id
 
         // 表头 variant 优先级：headerSelected > header
-        // 表体 variant 优先级：editing > selected(行或列) > default
+        // 表体 variant 优先级：editing > locked > selected(行或列) > defaultHover > default
+        // readOnly 模式下无 defaultHover
         const cellVariant = isHeader
           ? (isColumnSelected ? "headerSelected" : "header")
           : isEditing
             ? "editing"
-            : (isSelected || isColumnSelected)
-              ? "selected"
-              : "default"
+            : isLocked
+              ? "locked"
+              : (isSelected || isColumnSelected)
+                ? "selected"
+                : (isCellHovering && !state.readOnly ? "defaultHover" : "default")
 
         // 光标：选中列 + 非冻结 + 非拖拽中 = grab
         const showGrabCursor = isHeader && isColumnSelected && !isFrozen && !draggingColumnId
@@ -454,44 +365,92 @@ function RowRenderer({ row, isHeader, columnIds, onCellResizeStart, onCellHoverE
         return (
           <Cell
             key={cell.id}
-            width={width}
+            width={cellWidth}
             variant={cellVariant}
-            isLastCell={isLast}
-            resizable={isHeader && !isLast}
+            isLastCell={false}
+            resizable={isHeader && cellType !== "checkbox"}
             onResizeStart={onCellResizeStart ? (startWidth, startX) => onCellResizeStart(columnId, startWidth, startX) : undefined}
             onHoverEdge={onCellHoverEdge ? (hovering) => onCellHoverEdge(hovering ? columnId : null) : undefined}
-            onClick={isHeader && cell.type !== "checkbox" && onHeaderCellClick ? (e: React.MouseEvent) => onHeaderCellClick(columnId, cell.type, e) : undefined}
-            onMouseDown={isHeader && cell.type !== "checkbox" && !isFrozen && isColumnSelected && onHeaderCellMouseDown ? (e: React.MouseEvent) => onHeaderCellMouseDown(columnId, e) : undefined}
-            slotClassName={isHeader && cell.type === "text" ? "justify-between" : cell.type === "checkbox" ? "justify-center" : undefined}
+            onClick={isHeader && cellType !== "checkbox" && onHeaderCellClick
+              ? (e: React.MouseEvent) => onHeaderCellClick(columnId, cellType, e)
+              : !isHeader && cellType !== "checkbox" && onBodyCellClick
+                ? (e: React.MouseEvent) => onBodyCellClick(cell.id, e)
+                : undefined}
+            onMouseEnter={!isHeader && onCellHover ? () => onCellHover(cell.id) : undefined}
+            onMouseLeave={!isHeader && onCellHover ? () => onCellHover(null) : undefined}
+            onMouseDown={isHeader && cellType !== "checkbox" && !isFrozen && isColumnSelected && onHeaderCellMouseDown ? (e: React.MouseEvent) => onHeaderCellMouseDown(columnId, e) : undefined}
+            slotClassName={isHeader && cellType === "text" ? "justify-between" : cellType === "checkbox" ? "justify-center" : undefined}
             className={cn(
-              isHeader && cell.type === "text" && "group",
+              isHeader && cellType === "text" && "group",
+              // readOnly 模式下表头无悬停态变化
+              isHeader && state.readOnly && "hover:bg-neutral-1",
               isFrozen && "sticky",
               isHeader && isFrozen && "z-20",
               !isHeader && isFrozen && "z-10",
               isLastFrozen && "shadow-[2px_0_4px_-2px_var(--black-10)]",
               // 光标
               showGrabCursor && "cursor-grab",
-              showGrabbingCursor && "cursor-grabbing"
+              showGrabbingCursor && "cursor-grabbing",
+              // 分组模式下分组列的表头顶部描边
+              isHeader && groupColumnId && columnId === groupColumnId && "border-t-2 border-neutral-2"
             )}
             style={isFrozen ? { left: frozenLeft } : undefined}
           >
             <CellContent
               cellId={cell.id}
-              type={cell.type}
+              type={cellType}
               value={cell.value}
               rowId={isHeader ? undefined : row.id}
               isHeader={isHeader}
               columnId={columnId}
+              rowIndex={rowIndex}
+              cellOptions={(cell as { options?: Record<string, unknown> }).options}
+              isCellHovering={isCellHovering}
             />
           </Cell>
         )
       })}
+      {/* 插入列：仅表头渲染，readOnly 模式下隐藏 */}
+      {isHeader && !state.readOnly && (
+        <Cell
+          variant="header"
+          isLastCell={true}
+          className="flex-1 min-w-[40px] cursor-pointer"
+          onClick={() => {
+            const lastColumnId = columnIds![columnIds!.length - 1]
+            if (lastColumnId) actions.insertColumnRight(lastColumnId)
+          }}
+        >
+          <div className="flex items-center w-full h-full">
+            <Button variant="ghost" size="iconSm" leftIcon="icon-add" />
+          </div>
+        </Cell>
+      )}
     </div>
   )
-}
+}, (prev, next) => {
+  // 自定义比较函数：只有这些 props 变化时才重渲染
+  return prev.row === next.row
+    && prev.isHeader === next.isHeader
+    && prev.isLastRow === next.isLastRow
+    && prev.columnIds === next.columnIds
+    && prev.rowIndex === next.rowIndex
+    && prev.hoveringCellId === next.hoveringCellId
+    && prev.draggingColumnId === next.draggingColumnId
+    && prev.onCellResizeStart === next.onCellResizeStart
+    && prev.onCellHoverEdge === next.onCellHoverEdge
+    && prev.onHeaderCellClick === next.onHeaderCellClick
+    && prev.onHeaderCellMouseDown === next.onHeaderCellMouseDown
+    && prev.onCellHover === next.onCellHover
+    && prev.onBodyCellClick === next.onBodyCellClick
+    && prev.frozenOffsets === next.frozenOffsets
+    && prev.frozenWidth === next.frozenWidth
+    && prev.rowWidth === next.rowWidth
+    && prev.groupColumnId === next.groupColumnId
+})
 
 // 分组标题行组件
-function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxWidth, frozenNonCheckboxWidth, isCollapsed, isGroupSelected, onToggle, onGroupSelect, groupColumnId }: {
+function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxWidth, frozenNonCheckboxWidth, isCollapsed, isGroupSelected, onToggle, onGroupSelect, groupColumnId, isCheckboxHidden }: {
   groupValue: string
   rowCount: number
   frozenWidth: number
@@ -503,10 +462,13 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
   onToggle: () => void
   onGroupSelect: () => void
   groupColumnId: string
+  isCheckboxHidden?: boolean
 }) {
   const { state, actions } = useTable()
   const cellId = `group-header-${groupValue}`
   const isEditing = state.editingCellId === cellId
+  // readOnly 模式下无悬停态
+  const [hoveringCell, setHoveringCell] = React.useState<'checkbox' | 'title' | null>(null)
 
   // 编辑完成时同步更新分组列所有单元格
   const handleFinishEdit = () => {
@@ -516,27 +478,38 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
     actions.finishEdit()
   }
 
+  // 隐藏 checkbox 列时，调整冻结宽度（减去 checkbox 列宽度）
+  const adjustedFrozenWidth = isCheckboxHidden ? frozenWidth - checkboxWidth : frozenWidth
+
   return (
     <div
       data-slot="group-header"
-      className="flex border-b border-neutral-2 bg-white-100"
+      className="flex border-y border-neutral-2 mt-3 bg-white-100"
       style={{ width: `${rowWidth}px` }}
     >
       {/* 冻结部分 */}
       <div
-        className="sticky left-0 z-10 flex bg-white-100 shadow-[2px_0_4px_-2px_var(--black-10)]"
-        style={{ width: `${frozenWidth}px` }}
+        className="sticky left-0 z-10 flex shadow-[2px_0_4px_-2px_var(--black-10)] bg-white-100"
+        style={{ width: `${adjustedFrozenWidth}px` }}
       >
-        {/* 第一个单元格：checkbox 全选该组 */}
-        <Cell width={checkboxWidth} isLastCell={frozenNonCheckboxWidth === 0}>
-          <div className="flex items-center justify-center w-full h-full">
-            <Checkbox checked={isGroupSelected} onChange={onGroupSelect} />
-          </div>
-        </Cell>
+        {/* 第一个单元格：checkbox 全选该组（仅当 checkbox 列可见时渲染） */}
+        {!isCheckboxHidden && (
+          <Cell width={checkboxWidth} isLastCell={false} variant={!state.readOnly && hoveringCell === 'checkbox' ? "defaultHover" : "default"}
+            onMouseEnter={() => !state.readOnly && setHoveringCell('checkbox')}
+            onMouseLeave={() => setHoveringCell(null)}
+          >
+            <div className="flex items-center justify-center w-full h-full">
+              <Checkbox checked={isGroupSelected} onChange={onGroupSelect} />
+            </div>
+          </Cell>
+        )}
         {/* 第二个单元格：分组标题 + 展开/收起按钮 */}
         {frozenNonCheckboxWidth > 0 && (
-          <Cell width={frozenNonCheckboxWidth} isLastCell={false} variant={isEditing ? "editing" : "default"}>
-            <div className="flex items-center justify-between w-full">
+          <Cell width={frozenNonCheckboxWidth} isLastCell={false} variant={isEditing ? "editing" : (!state.readOnly && hoveringCell === 'title' ? "defaultHover" : "default")}
+            onMouseEnter={() => !state.readOnly && setHoveringCell('title')}
+            onMouseLeave={() => setHoveringCell(null)}
+          >
+            <div className="relative flex items-center justify-between w-full h-6">
               {isEditing ? (
                 <input
                   type="text"
@@ -548,43 +521,92 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
                     if (e.key === "Escape") actions.cancelEdit()
                   }}
                   onFocus={(e) => e.target.select()}
-                  className="absolute inset-0 bg-transparent border-none outline-none p-2 text-inherit font-inherit overflow-hidden"
+                  className="absolute inset-0 bg-transparent border-none outline-none text-inherit font-inherit overflow-hidden"
                   autoFocus
                 />
               ) : (
                 <span
-                  className="text-sm font-medium text-black-85 cursor-pointer truncate"
-                  onDoubleClick={() => actions.startEdit(cellId, groupValue)}
+                  className={cn(
+                    "text-sm cursor-pointer truncate",
+                    groupValue ? "font-medium text-black-85" : "font-normal text-black-25"
+                  )}
+                  onDoubleClick={state.readOnly ? undefined : () => actions.startEdit(cellId, groupValue)}
                 >
-                  {groupValue}
+                  {groupValue || "空值组"}
                 </span>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                rightIcon="icon-chevron-down"
-                onClick={onToggle}
-                className={`text-black-55 [&>svg:last-child]:transition-transform ${isCollapsed ? "[&>svg:last-child]:-rotate-90" : ""}`}
-              >
-                {rowCount}
-              </Button>
+              {!isEditing && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  rightIcon="icon-chevron-down"
+                  onClick={onToggle}
+                  className={`text-black-55 [&>svg:last-child]:transition-transform ${isCollapsed ? "[&>svg:last-child]:-rotate-90" : ""}`}
+                >
+                  {rowCount}
+                </Button>
+              )}
             </div>
           </Cell>
         )}
       </div>
       {/* 非冻结部分 */}
-      <div className="flex-1 bg-white-100" />
+      <Cell variant="default" isLastCell={false} className="flex-1">{''}</Cell>
+    </div>
+  )
+}
+
+// 插入行组件（分组和非分组共用）
+function InsertRow({ rowWidth, showBorder, isHovering, onHoverChange, onInsert, frozenWidth, checkboxWidth, isCheckboxHidden }: {
+  rowWidth: number
+  showBorder: boolean
+  isHovering: boolean
+  onHoverChange: (hovering: boolean) => void
+  onInsert: () => void
+  frozenWidth: number
+  checkboxWidth: number
+  isCheckboxHidden: boolean
+}) {
+  const cellWidth = isCheckboxHidden ? frozenWidth - checkboxWidth : frozenWidth
+  return (
+    <div
+      data-slot="insert-row"
+      className={cn(
+        "flex bg-white-100 cursor-pointer",
+        showBorder && "border-b border-neutral-2",
+        isHovering && "bg-neutral-1"
+      )}
+      style={{ width: `${rowWidth}px` }}
+      onMouseEnter={() => onHoverChange(true)}
+      onMouseLeave={() => onHoverChange(false)}
+      onClick={onInsert}
+    >
+      {/* 冻结区 */}
+      <Cell
+        width={cellWidth}
+        variant="default"
+        isLastCell={true}
+        className="sticky left-0 z-10 bg-transparent cursor-pointer"
+      >
+        <div className="flex items-center w-full h-full">
+          <Button variant="ghost" size="iconSm" leftIcon="icon-add" />
+        </div>
+      </Cell>
+      {/* 非冻结区 */}
+      <Cell variant="default" isLastCell={false} className="flex-1 cursor-pointer bg-transparent">{''}</Cell>
     </div>
   )
 }
 
 interface DataTableProps extends React.ComponentProps<"div">, VariantProps<typeof tableVariants> {
   data: TableData
+  cellRenderers?: CellRendererRegistry
+  readOnly?: boolean
 }
 
-function DataTable({ className, variant, data, ...props }: DataTableProps) {
+function DataTable({ className, variant, data, cellRenderers, readOnly, ...props }: DataTableProps) {
   return (
-    <TableProvider data={data}>
+    <TableProvider data={data} cellRenderers={cellRenderers} readOnly={readOnly}>
       <DataTableInner className={className} variant={variant} {...props} />
     </TableProvider>
   )
@@ -602,6 +624,12 @@ function DataTableInner({
 
   // 悬停列边缘状态
   const [hoveringColumnId, setHoveringColumnId] = React.useState<string | null>(null)
+  // 悬停单元格状态
+  const [hoveringCellId, setHoveringCellId] = React.useState<string | null>(null)
+  // 悬停分组插入行单元格状态：{groupValue, cell: 'add' | 'empty'}
+  const [hoveringGroupInsertCell, setHoveringGroupInsertCell] = React.useState<{groupValue: string, cell: 'add' | 'empty'} | null>(null)
+  // 悬停底部插入行单元格状态
+  const [insertRowHoveringCell, setInsertRowHoveringCell] = React.useState<'add' | 'empty' | null>(null)
   // 拖拽列宽状态
   const [resizingColumnId, setResizingColumnId] = React.useState<string | null>(null)
   const [resizingStartX, setResizingStartX] = React.useState(0)
@@ -646,9 +674,11 @@ function DataTableInner({
     return sum
   }, 0)
 
-  // 找到 checkbox 列宽度
-  const checkboxColumnId = data.columns.find(col => col.type === "checkbox")?.id
+  // 找到 checkbox 列（从 allColumns 中查找，因为 data.columns 可能已过滤隐藏列）
+  const checkboxColumnId = state.allColumns.find(col => col.type === "checkbox")?.id
   const checkboxColumnWidth = checkboxColumnId ? (state.columnWidths[checkboxColumnId] ?? 40) : 40
+  // checkbox 列是否隐藏
+  const isCheckboxHidden = checkboxColumnId ? state.hiddenColumns.has(checkboxColumnId) : false
 
   // 计算冻结列中非 checkbox 列的总宽度，用于分组标题行第二个单元格
   const frozenNonCheckboxWidth = columnIds.reduce((sum, colId) => {
@@ -658,22 +688,46 @@ function DataTableInner({
     return sum
   }, 0)
 
-  // 计算分组数据
+  // 性能优化：预计算冻结列偏移量（替代每行独立计算）
+  const frozenOffsets = React.useMemo(() => {
+    const offsets: Record<string, number> = {}
+    let accum = 0
+    columnIds.forEach(colId => {
+      if (state.frozenColumns.has(colId)) {
+        offsets[colId] = accum
+        accum += state.columnWidths[colId] ?? 80
+      }
+    })
+    return offsets
+  }, [columnIds, state.frozenColumns, state.columnWidths])
+
+  // 计算分组数据（使用原始数据获取分组值，但存储过滤后的行用于渲染）
   const groupedData = React.useMemo(() => {
     if (!state.groupColumnId) return null
 
-    const groupColumnIndex = columnIds.findIndex(id => id === state.groupColumnId)
+    // 从原始列中查找分组列索引（不受隐藏列影响）
+    const groupColumnIndex = state.allColumns.findIndex(col => col.id === state.groupColumnId)
     if (groupColumnIndex === -1) return null
 
     const groups: GroupedData[] = []
     const groupMap = new Map<string, RowData[]>()
 
-    data.rows.forEach(row => {
+    // 使用原始行数据获取分组值（含隐藏列的单元格）
+    const allRows = data.allRows ?? data.rows
+    // 建立原始行ID → 过滤后行的映射
+    const rowIdToFilteredRow = new Map<string, RowData>()
+    data.rows.forEach(filteredRow => rowIdToFilteredRow.set(filteredRow.id, filteredRow))
+
+    allRows.forEach(row => {
       const groupValue = String(row.cells[groupColumnIndex]?.value ?? "")
       if (!groupMap.has(groupValue)) {
         groupMap.set(groupValue, [])
       }
-      groupMap.get(groupValue)!.push(row)
+      // 存储过滤后的行（用于渲染，单元格数与可见列匹配）
+      const filteredRow = rowIdToFilteredRow.get(row.id)
+      if (filteredRow) {
+        groupMap.get(groupValue)!.push(filteredRow)
+      }
     })
 
     groupMap.forEach((rows, groupValue) => {
@@ -688,7 +742,7 @@ function DataTableInner({
     })
 
     return groups
-  }, [state.groupColumnId, columnIds, data.rows])
+  }, [state.groupColumnId, state.allColumns, data.allRows, data.rows])
 
   // 计算分割线位置（用于悬停和拖拽）
   const resizeLineLeft = React.useMemo(() => {
@@ -781,10 +835,12 @@ function DataTableInner({
 
   // 点击表头单元格选中列
   const handleHeaderCellClick = React.useCallback((columnId: string, _cellType: string, e: React.MouseEvent) => {
+    // readOnly 模式下禁用列选中
+    if (state.readOnly) return
     e.stopPropagation()
     if (state.selectedColumnId === columnId) return
     actions.selectColumn(columnId)
-  }, [actions, state.selectedColumnId])
+  }, [actions, state.selectedColumnId, state.readOnly])
 
   // 拖拽列顺序：mousedown 记录起始位置，实际拖拽在 mousemove ≥4px 时启动
   const dragNativeCleanupRef = React.useRef<(() => void) | null>(null)
@@ -925,7 +981,7 @@ function DataTableInner({
     }
   }, [draggingColumnId, columnIds, state.columnWidths, state.frozenColumns, actions])
 
-  // 点击其他区域清空选中列
+  // 点击其他区域清空选中列和锁定态
   const handleTableClick = React.useCallback(() => {
     if (dragJustEndedRef.current) {
       dragJustEndedRef.current = false
@@ -933,23 +989,231 @@ function DataTableInner({
     }
     if (isHeaderPopoverOpenRef.current) return
     actions.selectColumn(null)
+    actions.lockCell(null)
   }, [actions])
 
-  // 监听 document 点击，点击表格外部时清空选中列
-  const tableRef = React.useRef<HTMLDivElement>(null)
+  // 处理表体单元格点击（锁定态）
+  const handleBodyCellClick = React.useCallback((cellId: string, e: React.MouseEvent) => {
+    // readOnly 模式下禁用锁定态
+    if (state.readOnly) return
+    // 阻止事件冒泡到表格层（防止 handleTableClick 清空锁定态）
+    e.stopPropagation()
+    // 过滤组件元素点击（按钮、输入框、下拉等）→ 不改变锁定态
+    const target = e.target as HTMLElement
+    if (target.closest('button, input, select, a, [role="button"], [data-slot="select-trigger"]')) {
+      return
+    }
+    // 非组件区域点击 → 切换锁定态
+    actions.lockCell(cellId)
+  }, [actions, state.readOnly])
+
+  // 键盘导航：获取当前锁定单元格的行列索引
+  const getLockedCellPosition = React.useCallback(() => {
+    if (!state.lockedCellId) return null
+    // 遍历所有行和列找到锁定单元格的位置
+    const allRows = state.groupColumnId
+      ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
+      : data.rows
+    for (let rowIndex = 0; rowIndex < allRows.length; rowIndex++) {
+      const row = allRows[rowIndex]
+      for (let colIndex = 0; colIndex < row.cells.length; colIndex++) {
+        if (row.cells[colIndex].id === state.lockedCellId) {
+          return { rowIndex, colIndex, rowId: row.id }
+        }
+      }
+    }
+    return null
+  }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
+
+  // 键盘导航：根据方向移动锁定态（跳过 checkbox 列）
+  const navigateLockedCell = React.useCallback((direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') => {
+    const pos = getLockedCellPosition()
+    if (!pos) return
+
+    // 获取可见行（跳过折叠分组）
+    const visibleRows = state.groupColumnId
+      ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
+      : data.rows
+
+    let newRowIndex = pos.rowIndex
+    let newColIndex = pos.colIndex
+
+    // 横向导航：跳过 checkbox 列
+    if (direction === 'ArrowLeft' || direction === 'ArrowRight') {
+      const step = direction === 'ArrowLeft' ? -1 : 1
+      const maxCol = (visibleRows[pos.rowIndex]?.cells.length ?? 1) - 1
+      let candidateCol = pos.colIndex + step
+      // 循环找到下一个非 checkbox 列
+      while (candidateCol >= 0 && candidateCol <= maxCol) {
+        const candidateCell = visibleRows[pos.rowIndex]?.cells[candidateCol]
+        if (candidateCell && candidateCell.type !== 'checkbox') {
+          newColIndex = candidateCol
+          break
+        }
+        candidateCol += step
+      }
+    } else {
+      // 纵向导航
+      switch (direction) {
+        case 'ArrowUp':
+          newRowIndex = Math.max(0, pos.rowIndex - 1)
+          break
+        case 'ArrowDown':
+          newRowIndex = Math.min(visibleRows.length - 1, pos.rowIndex + 1)
+          break
+      }
+    }
+
+    // 如果位置没变化，不做任何事
+    if (newRowIndex === pos.rowIndex && newColIndex === pos.colIndex) return
+
+    const targetCell = visibleRows[newRowIndex]?.cells[newColIndex]
+    // 确保目标单元格不是 checkbox
+    if (targetCell && targetCell.type !== 'checkbox') {
+      actions.lockCell(targetCell.id)
+    }
+  }, [getLockedCellPosition, state.groupColumnId, state.collapsedGroups, groupedData, data.rows, actions])
+
+  // 键盘导航：获取单元格类型
+  const getLockedCellType = React.useCallback(() => {
+    if (!state.lockedCellId) return null
+    const allRows = state.groupColumnId
+      ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
+      : data.rows
+    for (const row of allRows) {
+      for (const cell of row.cells) {
+        if (cell.id === state.lockedCellId) {
+          return cell.type ?? 'text'
+        }
+      }
+    }
+    return null
+  }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
+
+  // 键盘导航：获取单元格当前值
+  const getLockedCellValue = React.useCallback(() => {
+    if (!state.lockedCellId) return ''
+    const allRows = state.groupColumnId
+      ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
+      : data.rows
+    for (const row of allRows) {
+      for (const cell of row.cells) {
+        if (cell.id === state.lockedCellId) {
+          return String(cell.value ?? '')
+        }
+      }
+    }
+    return ''
+  }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
+
+  // 键盘事件监听
   React.useEffect(() => {
-    if (!state.selectedColumnId) return
+    if (!state.lockedCellId) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 编辑态：Enter 保存并下移，Escape 取消编辑
+      if (state.editingCellId) {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          actions.finishEdit()
+          // 保存后移动到下一行同列单元格
+          navigateLockedCell('ArrowDown')
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          actions.cancelEdit()
+          return
+        }
+        // 其他按键在编辑态不处理
+        return
+      }
+
+      // Escape → 退出锁定态
+      if (e.key === 'Escape') {
+        actions.lockCell(null)
+        return
+      }
+
+      // 方向键导航
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault()
+        navigateLockedCell(e.key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight')
+        return
+      }
+
+      // Tab / Shift+Tab 导航
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        navigateLockedCell(e.shiftKey ? 'ArrowLeft' : 'ArrowRight')
+        return
+      }
+
+      // Enter → 进入编辑态（文本单元格）— readOnly 模式下禁用
+      if (e.key === 'Enter' && !state.readOnly) {
+        const cellType = getLockedCellType()
+        if (cellType === 'text' || cellType === 'editable') {
+          const currentValue = getLockedCellValue()
+          actions.startEdit(state.lockedCellId!, currentValue)
+        }
+        return
+      }
+
+      // 可打印字符 → 进入编辑态（以该字符为初始值）— readOnly 模式下禁用
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !state.readOnly) {
+        const cellType = getLockedCellType()
+        if (cellType === 'text' || cellType === 'editable') {
+          actions.startEdit(state.lockedCellId!, e.key)
+        }
+        return
+      }
+
+      // Backspace/Delete → 进入编辑态（清空内容）— readOnly 模式下禁用
+      if ((e.key === 'Backspace' || e.key === 'Delete') && !state.readOnly) {
+        const cellType = getLockedCellType()
+        if (cellType === 'text' || cellType === 'editable') {
+          actions.startEdit(state.lockedCellId!, '')
+        }
+        return
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [state.lockedCellId, state.editingCellId, actions, navigateLockedCell, getLockedCellType, getLockedCellValue])
+
+  // 监听 document 点击，点击表格外部时清空选中列和锁定态
+  const tableRef = React.useRef<HTMLDivElement>(null)
+
+  // 横向滚动位置（用于冻结列分割线补偿）
+  const [scrollLeft, setScrollLeft] = React.useState(0)
+
+  // 监听父容器滚动
+  React.useEffect(() => {
+    const parent = tableRef.current?.parentElement
+    if (!parent) return
+
+    const handleScroll = () => setScrollLeft(parent.scrollLeft)
+    parent.addEventListener('scroll', handleScroll)
+    handleScroll() // 初始化
+
+    return () => parent.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  React.useEffect(() => {
+    if (!state.selectedColumnId && !state.lockedCellId) return
 
     const handleClickOutside = (e: MouseEvent) => {
       if (isHeaderPopoverOpenRef.current) return
       if (!tableRef.current?.contains(e.target as Node)) {
         actions.selectColumn(null)
+        actions.lockCell(null)
       }
     }
 
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
-  }, [state.selectedColumnId, actions])
+  }, [state.selectedColumnId, state.lockedCellId, actions])
 
   return (
     <HeaderPopoverOpenRefContext.Provider value={isHeaderPopoverOpenRef}>
@@ -962,21 +1226,27 @@ function DataTableInner({
         {...props}
       >
       <div className="sticky top-0 z-20">
-        <RowRenderer
-          row={headerRow}
-          isHeader
-          columnIds={columnIds}
-          onCellResizeStart={handleResizeStart}
-          onCellHoverEdge={handleHoverEdge}
-          onHeaderCellClick={handleHeaderCellClick}
-          onHeaderCellMouseDown={handleHeaderCellMouseDown}
-          draggingColumnId={draggingColumnId}
-        />
+        <div className="relative">
+          <RowRenderer
+            row={headerRow}
+            isHeader
+            columnIds={columnIds}
+            onCellResizeStart={handleResizeStart}
+            onCellHoverEdge={handleHoverEdge}
+            onHeaderCellClick={handleHeaderCellClick}
+            onHeaderCellMouseDown={handleHeaderCellMouseDown}
+            draggingColumnId={draggingColumnId}
+            frozenOffsets={frozenOffsets}
+            frozenWidth={frozenWidth}
+            rowWidth={rowWidth}
+            groupColumnId={state.groupColumnId ?? undefined}
+          />
+        </div>
       </div>
-      <div>
+      <div className={groupedData ? "pb-3" : undefined}>
         {groupedData ? (
-          // 分组渲染
-          groupedData.map(group => {
+          // 分组渲染（每组序号独立计算）
+          groupedData.map((group, groupIndex) => {
             const isCollapsed = state.collapsedGroups.has(group.groupValue)
             const isGroupSelected = group.rows.every(row => state.selectedRows.has(row.id))
             return (
@@ -993,42 +1263,38 @@ function DataTableInner({
                   onToggle={() => actions.toggleGroupCollapse(group.groupValue)}
                   onGroupSelect={() => actions.toggleGroupSelect(group.groupValue, group.rows)}
                   groupColumnId={state.groupColumnId!}
+                  isCheckboxHidden={isCheckboxHidden}
                 />
                 {!isCollapsed && (
                   <>
-                    {group.rows.map(row => (
-                      <RowRenderer key={row.id} row={row} columnIds={columnIds} />
+                    {group.rows.map((row, i) => (
+                      <RowRenderer
+                        key={row.id}
+                        row={row}
+                        columnIds={columnIds}
+                        rowIndex={i + 1}
+                        isLastRow={i === group.rows.length - 1 && groupIndex === groupedData.length - 1}
+                        hoveringCellId={hoveringCellId}
+                        onCellHover={setHoveringCellId}
+                        onBodyCellClick={handleBodyCellClick}
+                        frozenOffsets={frozenOffsets}
+                        frozenWidth={frozenWidth}
+                        rowWidth={rowWidth}
+                      />
                     ))}
-                    {/* 插入行 */}
-                    <div
-                      data-slot="insert-row"
-                      className="flex border-b border-neutral-2 bg-white-100"
-                      style={{ width: `${rowWidth}px` }}
-                    >
-                      {/* 冻结部分 */}
-                      <div
-                        className="sticky left-0 z-10 flex bg-white-100 shadow-[2px_0_4px_-2px_var(--black-10)]"
-                        style={{ width: `${frozenWidth}px` }}
-                      >
-                        {/* 第一个单元格：add 按钮 */}
-                        <Cell width={checkboxColumnWidth} isLastCell={frozenNonCheckboxWidth === 0}>
-                          <div className="flex items-center justify-center w-full h-full">
-                            <Button
-                              variant="ghost"
-                              size="iconSm"
-                              leftIcon="icon-add"
-                              onClick={() => state.groupColumnId && actions.insertRowInGroup(group.groupValue, state.groupColumnId)}
-                            />
-                          </div>
-                        </Cell>
-                        {/* 第二个单元格：空 */}
-                        {frozenNonCheckboxWidth > 0 && (
-                          <Cell width={frozenNonCheckboxWidth} isLastCell={false}>{''}</Cell>
-                        )}
-                      </div>
-                      {/* 非冻结部分 */}
-                      <div className="flex-1 bg-white-100" />
-                    </div>
+                    {/* 插入行：readOnly 模式下隐藏 */}
+                    {!state.readOnly && (
+                      <InsertRow
+                        rowWidth={rowWidth}
+                        showBorder={true}
+                        isHovering={hoveringGroupInsertCell?.groupValue === group.groupValue}
+                        onHoverChange={(h) => setHoveringGroupInsertCell(h ? {groupValue: group.groupValue, cell: 'add'} : null)}
+                        onInsert={() => state.groupColumnId && actions.insertRowInGroup(group.groupValue, state.groupColumnId)}
+                        frozenWidth={frozenWidth}
+                        checkboxWidth={checkboxColumnWidth}
+                        isCheckboxHidden={isCheckboxHidden}
+                      />
+                    )}
                   </>
                 )}
               </React.Fragment>
@@ -1036,23 +1302,58 @@ function DataTableInner({
           })
         ) : (
           // 普通渲染
-          data.rows.map((row) => (
-            <RowRenderer key={row.id} row={row} columnIds={columnIds} />
-          ))
+          <>
+            {data.rows.map((row, index) => (
+              <RowRenderer
+                key={row.id}
+                row={row}
+                columnIds={columnIds}
+                rowIndex={index + 1}
+                isLastRow={false}
+                hoveringCellId={hoveringCellId}
+                onCellHover={setHoveringCellId}
+                onBodyCellClick={handleBodyCellClick}
+                frozenOffsets={frozenOffsets}
+                frozenWidth={frozenWidth}
+                rowWidth={rowWidth}
+              />
+            ))}
+            {/* 底部插入行：readOnly 模式下隐藏 */}
+            {!state.readOnly && (
+              <InsertRow
+                rowWidth={rowWidth}
+                showBorder={false}
+                isHovering={insertRowHoveringCell !== null}
+                onHoverChange={(h) => setInsertRowHoveringCell(h ? 'add' : null)}
+                onInsert={() => actions.insertRow()}
+                frozenWidth={frozenWidth}
+                checkboxWidth={checkboxColumnWidth}
+                isCheckboxHidden={isCheckboxHidden}
+              />
+            )}
+          </>
         )}
       </div>
-      {/* 贯穿整个表格的分割线（悬停或拖拽列宽时显示） */}
+      {/* 列宽调整分割线 */}
       {(hoveringColumnId || resizingColumnId) && (
         <div
           className="absolute top-0 bottom-0 w-0.5 bg-brand-6 z-30 -translate-x-1/2"
-          style={{ left: `${resizeLineLeft}px` }}
+          style={{
+            left: `${state.frozenColumns.has(hoveringColumnId || resizingColumnId || '')
+              ? resizeLineLeft + scrollLeft
+              : resizeLineLeft}px`
+          }}
         />
       )}
       {/* 拖拽列顺序分割线 */}
       {draggingColumnId && dragTargetColumnId && (
         <div
           className="absolute top-0 bottom-0 w-0.5 bg-brand-6 z-30 -translate-x-1/2"
-          style={{ left: `${dragLineLeft}px` }}
+          style={{
+            left: `${state.frozenColumns.has(dragTargetColumnId)
+              ? dragLineLeft + scrollLeft
+              : dragLineLeft}px`
+          }}
         />
       )}
       {/* 拖拽蒙层 */}

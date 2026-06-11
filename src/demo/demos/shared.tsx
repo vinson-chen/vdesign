@@ -171,19 +171,30 @@ export function CardGrid({ cols = 6, children }: CardGridProps) {
 }
 
 // 区块标题组件
-export function SectionTitle({ title }: { title: string }) {
+export function SectionTitle({
+  title,
+  rightElement,
+}: {
+  title: string
+  rightElement?: React.ReactNode
+}) {
   return (
-    <h2
-      style={{
-        color: "var(--neutral-5)",
-        fontSize: "24px",
-        lineHeight: "32px",
-        fontWeight: 600,
-        marginBottom: "32px",
-      }}
+    <div
+      className="flex items-center justify-between"
+      style={{ marginBottom: "32px" }}
     >
-      {title}
-    </h2>
+      <h2
+        style={{
+          color: "var(--neutral-5)",
+          fontSize: "24px",
+          lineHeight: "32px",
+          fontWeight: 600,
+        }}
+      >
+        {title}
+      </h2>
+      {rightElement}
+    </div>
   )
 }
 

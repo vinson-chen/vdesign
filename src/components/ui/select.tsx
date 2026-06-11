@@ -37,7 +37,7 @@ function Select({
   VariantProps<typeof selectTriggerVariants>) {
   const isDisabled = disabled || variant === "disabled"
   return (
-    <SelectPrimitive.Root disabled={isDisabled} {...props}>
+    <SelectPrimitive.Root disabled={isDisabled} modal={false} {...props}>
       {children}
     </SelectPrimitive.Root>
   )
@@ -101,7 +101,7 @@ function SelectContent({
         )}
         {...props}
       >
-        <SelectPrimitive.Viewport className="flex flex-col p-1">
+        <SelectPrimitive.Viewport className="flex flex-col p-1 group/options">
           {children}
         </SelectPrimitive.Viewport>
       </SelectPrimitive.Content>
@@ -110,7 +110,7 @@ function SelectContent({
 }
 
 const selectItemVariants = cva(
-  "relative flex cursor-pointer select-none items-center outline-none transition-all text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2 data-[state=checked]:bg-neutral-1 data-[state=checked]:text-black-85",
+  "relative flex cursor-pointer select-none items-center outline-none transition-all text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2 data-[state=checked]:bg-neutral-1 group-hover/options:data-[state=checked]:bg-transparent hover:data-[state=checked]:bg-neutral-1 data-[state=checked]:text-black-85",
   {
     variants: {
       size: {

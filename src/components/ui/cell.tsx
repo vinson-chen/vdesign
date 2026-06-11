@@ -7,8 +7,10 @@ const cellVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-white-100 hover:bg-neutral-1",
-        selected: "bg-brand-1 hover:bg-brand-2",
+        default: "bg-white-100",
+        defaultHover: "bg-neutral-1",
+        selected: "bg-brand-1",
+        locked: "bg-brand-1",
         editing: "bg-success-2",
         header: "bg-neutral-1 hover:bg-neutral-2 font-medium has-[[data-state=open]]:bg-neutral-2",
         headerSelected: "bg-neutral-2 font-medium",
@@ -44,36 +46,34 @@ interface CellProps extends React.ComponentProps<"div">, VariantProps<typeof cel
   onResizeStart?: (startWidth: number, startX: number) => void
   onHoverEdge?: (hovering: boolean) => void
   slotClassName?: string
+  onClick?: (e: React.MouseEvent) => void
 }
 
-function Cell({ className, variant, width, children, isLastCell, resizable, onResizeStart, onHoverEdge, slotClassName, style, ...props }: CellProps) {
-  const handleMouseDown = (e: React.MouseEvent) => {
+// Cell 是纯展示组件，用 React.memo 避免父组件状态变化时重渲染
+const Cell = React.memo(function Cell({ className, variant, width, children, isLastCell, resizable, onResizeStart, onHoverEdge, slotClassName, style, ...props }: CellProps) {
+  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (onResizeStart) {
       onResizeStart(width ?? 80, e.clientX)
     }
-  }
+  }, [onResizeStart, width])
 
-  const handleMouseEnterEdge = () => {
-    if (onHoverEdge) {
-      onHoverEdge(true)
-    }
-  }
+  const handleMouseEnterEdge = React.useCallback(() => {
+    onHoverEdge?.(true)
+  }, [onHoverEdge])
 
-  const handleMouseLeaveEdge = () => {
-    if (onHoverEdge) {
-      onHoverEdge(false)
-    }
-  }
+  const handleMouseLeaveEdge = React.useCallback(() => {
+    onHoverEdge?.(false)
+  }, [onHoverEdge])
 
   const showResizeEdge = resizable && !isLastCell
 
   // 合并传入的 style 和宽度 style
-  const mergedStyle = {
+  const mergedStyle = React.useMemo(() => ({
     ...style,
     ...(width ? { width: `${width}px`, minWidth: `${width}px` } : {}),
-  }
+  }), [style, width])
 
   return (
     <div
@@ -98,9 +98,9 @@ function Cell({ className, variant, width, children, isLastCell, resizable, onRe
       )}
     </div>
   )
-}
+})
 
-function CellSlot({
+const CellSlot = React.memo(function CellSlot({
   className,
   size,
   children,
@@ -115,6 +115,6 @@ function CellSlot({
       {children}
     </div>
   )
-}
+})
 
 export { Cell, CellSlot, cellVariants, slotVariants }

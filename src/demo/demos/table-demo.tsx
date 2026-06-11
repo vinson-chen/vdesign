@@ -21,37 +21,28 @@ import { Cell } from "@/components/ui/cell"
 import { DataTable } from "@/components/ui/data-table"
 import { Card, CardGrid, SectionTitle } from "./shared"
 
-// 常规布局页面组件
+// 维思 Vcell 布局页面组件
 function LayoutPage() {
-  // 生成 10x10 表格数据（带 checkbox 列）
+  // 生成表格数据：1行2列数据列（checkbox + 列1 + 列2）
   const tableData = {
     columns: [
       { id: "checkbox", type: "checkbox" as const, width: 40 },
-      ...Array.from({ length: 10 }, (_, i) => ({
-        id: `col${i + 1}`,
-        type: "text" as const,
-        title: `列${i + 1}`,
-        width: 200,
-      })),
+      { id: "col1", type: "text" as const, title: "列1", width: 200 },
+      { id: "col2", type: "text" as const, title: "列2", width: 200 },
     ],
-    rows: Array.from({ length: 20 }, (_, rowIndex) => ({
-      id: `row${rowIndex + 1}`,
-      cells: [
-        { id: `cb${rowIndex + 1}`, type: "checkbox" as const, value: false, width: 40 },
-        ...Array.from({ length: 10 }, (_, colIndex) => ({
-          id: `r${rowIndex + 1}c${colIndex + 1}`,
-          type: "text" as const,
-          value: "",
-          width: 200,
-        })),
-      ],
-    })),
+    rows: [
+      { id: "row1", cells: [
+        { id: "cb1", value: false },
+        { id: "r1c1", value: "" },
+        { id: "r1c2", value: "" },
+      ]},
+    ],
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
-      <SectionTitle title="常规布局" />
-      <div className="flex-1 bg-white-100 overflow-auto overscroll-none border-l border-t border-r border-neutral-2">
+    <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
+      <SectionTitle title="维思 Vcell" />
+      <div className="shrink min-h-0 bg-white-100 overflow-auto overscroll-none border border-neutral-2">
         <DataTable data={tableData} variant="plain" />
       </div>
     </div>
@@ -75,7 +66,7 @@ function TablePage() {
           <Card label="Cell" copyText="component=Cell, variant=header, child=Button">
             <div className="flex h-full items-center justify-center">
               <Cell variant="header">
-                <Button variant="cell" size="cellBase">按钮</Button>
+                <Button variant="ghost" size="base">按钮</Button>
               </Cell>
             </div>
           </Card>
@@ -108,7 +99,7 @@ function TablePage() {
           <Card label="Cell" copyText="component=Cell, child=Button">
             <div className="flex h-full items-center justify-center">
               <Cell>
-                <Button variant="cell" size="cellBase">按钮</Button>
+                <Button variant="ghost" size="base">按钮</Button>
               </Cell>
             </div>
           </Card>
@@ -137,6 +128,17 @@ function TablePage() {
           <Card label="Table" copyText="component=Table, variant=base">
             <div className="flex h-full items-center justify-center overflow-auto">
               <DataTableDemo />
+            </div>
+          </Card>
+        </CardGrid>
+      </section>
+
+      <SectionTitle title="多列类型表格" />
+      <section>
+        <CardGrid cols={1}>
+          <Card label="Table" copyText="component=Table, columnTypes=text/select/input/button/icon">
+            <div className="flex h-full items-center justify-center overflow-auto">
+              <ColumnTypeDemo />
             </div>
           </Card>
         </CardGrid>
@@ -223,6 +225,60 @@ function CustomCellDemo() {
   )
 }
 
+// 多列类型演示组件
+function ColumnTypeDemo() {
+  const tableData = {
+    columns: [
+      { id: "checkbox", type: "checkbox" as const, width: 40 },
+      { id: "name", type: "text" as const, title: "名称", width: 160 },
+      { id: "status", type: "select" as const, title: "状态", width: 120,
+        options: {
+          items: [
+            { value: "active", label: "进行中" },
+            { value: "done", label: "已完成" },
+            { value: "paused", label: "已暂停" },
+          ]
+        }
+      },
+      { id: "note", type: "input" as const, title: "备注", width: 180 },
+      { id: "action", type: "button" as const, title: "操作", width: 80,
+        options: { variant: "outline", label: "编辑" }
+      },
+      { id: "star", type: "icon" as const, title: "标记", width: 50,
+        options: { iconName: "icon-star" }
+      },
+    ],
+    rows: [
+      { id: "row1", cells: [
+        { id: "cb1", value: false },
+        { id: "r1c1", value: "任务 A" },
+        { id: "r1c2", value: "active" },
+        { id: "r1c3", value: "" },
+        { id: "r1c4", value: "编辑" },
+        { id: "r1c5", value: "icon-star" },
+      ]},
+      { id: "row2", cells: [
+        { id: "cb2", value: false },
+        { id: "r2c1", value: "任务 B" },
+        { id: "r2c2", value: "done" },
+        { id: "r2c3", value: "已完成备注" },
+        { id: "r2c4", value: "编辑" },
+        { id: "r2c5", value: "icon-star" },
+      ]},
+      { id: "row3", cells: [
+        { id: "cb3", value: false },
+        { id: "r3c1", value: "任务 C" },
+        { id: "r3c2", value: "paused" },
+        { id: "r3c3", value: "" },
+        { id: "r3c4", value: "编辑" },
+        { id: "r3c5", value: "icon-star-outline" },
+      ]},
+    ],
+  }
+
+  return <DataTable data={tableData} />
+}
+
 // 使用新架构的表格示例
 function DataTableDemo() {
   const tableData = {
@@ -236,36 +292,36 @@ function DataTableDemo() {
     ],
     rows: [
       { id: "row1", cells: [
-        { id: "cb1", type: "checkbox" as const, value: false },
-        { id: "r1c1", type: "text" as const, value: "文本内容A" },
-        { id: "r1c2", type: "text" as const, value: "文本内容B" },
-        { id: "r1c3", type: "text" as const, value: "文本内容C" },
-        { id: "r1c4", type: "text" as const, value: "文本内容D" },
-        { id: "r1c5", type: "text" as const, value: "文本内容E" },
+        { id: "cb1", value: false },
+        { id: "r1c1", value: "文本内容A" },
+        { id: "r1c2", value: "文本内容B" },
+        { id: "r1c3", value: "文本内容C" },
+        { id: "r1c4", value: "文本内容D" },
+        { id: "r1c5", value: "文本内容E" },
       ]},
       { id: "row2", cells: [
-        { id: "cb2", type: "checkbox" as const, value: false },
-        { id: "r2c1", type: "text" as const, value: "第二行A" },
-        { id: "r2c2", type: "text" as const, value: "第二行B" },
-        { id: "r2c3", type: "text" as const, value: "第二行C" },
-        { id: "r2c4", type: "text" as const, value: "第二行D" },
-        { id: "r2c5", type: "text" as const, value: "第二行E" },
+        { id: "cb2", value: false },
+        { id: "r2c1", value: "第二行A" },
+        { id: "r2c2", value: "第二行B" },
+        { id: "r2c3", value: "第二行C" },
+        { id: "r2c4", value: "第二行D" },
+        { id: "r2c5", value: "第二行E" },
       ]},
       { id: "row3", cells: [
-        { id: "cb3", type: "checkbox" as const, value: false },
-        { id: "r3c1", type: "text" as const, value: "第三行A" },
-        { id: "r3c2", type: "text" as const, value: "第三行B" },
-        { id: "r3c3", type: "text" as const, value: "第三行C" },
-        { id: "r3c4", type: "text" as const, value: "第三行D" },
-        { id: "r3c5", type: "text" as const, value: "第三行E" },
+        { id: "cb3", value: false },
+        { id: "r3c1", value: "第三行A" },
+        { id: "r3c2", value: "第三行B" },
+        { id: "r3c3", value: "第三行C" },
+        { id: "r3c4", value: "第三行D" },
+        { id: "r3c5", value: "第三行E" },
       ]},
       { id: "row4", cells: [
-        { id: "cb4", type: "checkbox" as const, value: false },
-        { id: "r4c1", type: "text" as const, value: "第四行A" },
-        { id: "r4c2", type: "text" as const, value: "第四行B" },
-        { id: "r4c3", type: "text" as const, value: "第四行C" },
-        { id: "r4c4", type: "text" as const, value: "第四行D" },
-        { id: "r4c5", type: "text" as const, value: "第四行E" },
+        { id: "cb4", value: false },
+        { id: "r4c1", value: "第四行A" },
+        { id: "r4c2", value: "第四行B" },
+        { id: "r4c3", value: "第四行C" },
+        { id: "r4c4", value: "第四行D" },
+        { id: "r4c5", value: "第四行E" },
       ]},
     ],
   }
@@ -273,4 +329,4 @@ function DataTableDemo() {
   return <DataTable data={tableData} />
 }
 
-export { LayoutPage, TablePage, DataTableDemo }
+export { LayoutPage, TablePage, DataTableDemo, ColumnTypeDemo }

@@ -1,22 +1,55 @@
 import * as React from "react"
-import type { TableContextValue, TableState, TableActions, TableData, ColumnDef, CellData, RowData, CellType } from "@/types/table"
+import type { TableContextValue, TableState, TableActions, TableData, ColumnDef, CellData, RowData, CellType, CellRendererRegistry } from "@/types/table"
+import { defaultCellRenderers } from "@/components/ui/cell-renderers"
 
-const TableContext = React.createContext<TableContextValue | null>(null)
+// 拆分为 3 个独立 Context，减少不相关状态变化引起的重渲染
+const TableActionsContext = React.createContext<TableActions | null>(null)
+const TableDataContext = React.createContext<TableData | null>(null)
+const TableStateContext = React.createContext<TableState | null>(null)
+const CellRenderersContext = React.createContext<CellRendererRegistry>(defaultCellRenderers)
 
-function useTable() {
-  const context = React.useContext(TableContext)
-  if (!context) {
-    throw new Error("useTable must be used within a TableProvider")
+// 独立 hooks：组件只订阅自己需要的 Context
+function useTableActions() {
+  const ctx = React.useContext(TableActionsContext)
+  if (!ctx) throw new Error("useTableActions must be used within a TableProvider")
+  return ctx
+}
+
+function useTableData() {
+  const ctx = React.useContext(TableDataContext)
+  if (!ctx) throw new Error("useTableData must be used within a TableProvider")
+  return ctx
+}
+
+function useTableState() {
+  const ctx = React.useContext(TableStateContext)
+  if (!ctx) throw new Error("useTableState must be used within a TableProvider")
+  return ctx
+}
+
+// 向后兼容的组合 hook
+function useTable(): TableContextValue {
+  return {
+    state: useTableState(),
+    actions: useTableActions(),
+    data: useTableData(),
+    cellRenderers: React.useContext(CellRenderersContext),
   }
-  return context
 }
 
 interface TableProviderProps {
   data: TableData
+  cellRenderers?: CellRendererRegistry
+  readOnly?: boolean
   children: React.ReactNode
 }
 
-function TableProvider({ data, children }: TableProviderProps) {
+function TableProvider({ data, cellRenderers, readOnly, children }: TableProviderProps) {
+  // 合并内置渲染器和自定义渲染器
+  const mergedRenderers = React.useMemo(
+    () => ({ ...defaultCellRenderers, ...cellRenderers }),
+    [cellRenderers]
+  )
   // 初始化列宽
   const [columnWidths, setColumnWidths] = React.useState<Record<string, number>>(() => {
     const widths: Record<string, number> = {}
@@ -29,7 +62,7 @@ function TableProvider({ data, children }: TableProviderProps) {
   // 动态列数据
   const [columns, setColumns] = React.useState<ColumnDef[]>(data.columns)
   const [rows, setRows] = React.useState<RowData[]>(data.rows)
-  const [hiddenColumns, setHiddenColumns] = React.useState<Set<string>>(new Set())
+  const [hiddenColumns, setHiddenColumns] = React.useState<Set<string>>(() => data.hiddenColumns ?? new Set())
   // 默认冻结 checkbox 列和第一列
   const [frozenColumns, setFrozenColumns] = React.useState<Set<string>>(() => {
     const frozen = new Set<string>()
@@ -43,7 +76,7 @@ function TableProvider({ data, children }: TableProviderProps) {
   })
 
   // 分组列
-  const [groupColumnId, setGroupColumnId] = React.useState<string | null>(null)
+  const [groupColumnId, setGroupColumnId] = React.useState<string | null>(() => data.groupColumnId ?? null)
   // 收起的分组
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
 
@@ -51,6 +84,9 @@ function TableProvider({ data, children }: TableProviderProps) {
   const [selectedRows, setSelectedRows] = React.useState<Set<string>>(new Set())
   // 选中列
   const [selectedColumnId, setSelectedColumnId] = React.useState<string | null>(null)
+
+  // 锁定状态（焦点单元格）
+  const [lockedCellId, setLockedCellId] = React.useState<string | null>(null)
 
   // 编辑状态
   const [editingCellId, setEditingCellId] = React.useState<string | null>(null)
@@ -78,6 +114,8 @@ function TableProvider({ data, children }: TableProviderProps) {
       }
       return next
     })
+    // 选中行时清空锁定态
+    setLockedCellId(null)
   }, [])
 
   const clearSelection = React.useCallback(() => {
@@ -126,6 +164,19 @@ function TableProvider({ data, children }: TableProviderProps) {
     setEditingValue(value)
   }, [])
 
+  // 单元格值更新（由渲染器通过 onChange 触发）
+  // 优化：只更新目标行，跳过无关行
+  const updateCellValue = React.useCallback((cellId: string, value: unknown) => {
+    setRows((prev) => prev.map(row => {
+      // 快速跳过不包含目标 cellId 的行
+      const cellIndex = row.cells.findIndex(c => c.id === cellId)
+      if (cellIndex === -1) return row
+      const newCells = [...row.cells]
+      newCells[cellIndex] = { ...row.cells[cellIndex], value: value as string | boolean | number }
+      return { ...row, cells: newCells }
+    }))
+  }, [])
+
   // 列宽操作
   const updateColumnWidth = React.useCallback((columnId: string, width: number) => {
     setColumnWidths((prev) => ({
@@ -147,7 +198,7 @@ function TableProvider({ data, children }: TableProviderProps) {
       id: newColumnId,
       type: "text",
       title: "新列",
-      width: 80,
+      width: 200,
     }
 
     setColumns((prev) => {
@@ -158,7 +209,7 @@ function TableProvider({ data, children }: TableProviderProps) {
 
     setColumnWidths((prev) => ({
       ...prev,
-      [newColumnId]: 80,
+      [newColumnId]: 200,
     }))
 
     setRows((prev) =>
@@ -167,7 +218,7 @@ function TableProvider({ data, children }: TableProviderProps) {
           id: `${newColumnId}-${row.id}`,
           type: "text",
           value: "",
-          width: 80,
+          width: 200,
         }
         const newCells = [...row.cells]
         newCells.splice(index, 0, newCell)
@@ -185,7 +236,7 @@ function TableProvider({ data, children }: TableProviderProps) {
       id: newColumnId,
       type: "text",
       title: "新列",
-      width: 80,
+      width: 200,
     }
 
     setColumns((prev) => {
@@ -196,7 +247,7 @@ function TableProvider({ data, children }: TableProviderProps) {
 
     setColumnWidths((prev) => ({
       ...prev,
-      [newColumnId]: 80,
+      [newColumnId]: 200,
     }))
 
     setRows((prev) =>
@@ -205,7 +256,7 @@ function TableProvider({ data, children }: TableProviderProps) {
           id: `${newColumnId}-${row.id}`,
           type: "text",
           value: "",
-          width: 80,
+          width: 200,
         }
         const newCells = [...row.cells]
         newCells.splice(index + 1, 0, newCell)
@@ -216,6 +267,18 @@ function TableProvider({ data, children }: TableProviderProps) {
 
   const hideColumn = React.useCallback((columnId: string) => {
     setHiddenColumns((prev) => new Set(prev).add(columnId))
+  }, [])
+
+  const toggleColumnVisibility = React.useCallback((columnId: string) => {
+    setHiddenColumns((prev) => {
+      const next = new Set(prev)
+      if (next.has(columnId)) {
+        next.delete(columnId)
+      } else {
+        next.add(columnId)
+      }
+      return next
+    })
   }, [])
 
   const deleteColumn = React.useCallback((columnId: string) => {
@@ -272,6 +335,15 @@ function TableProvider({ data, children }: TableProviderProps) {
     )
   }, [])
 
+  // 更新列配置（options）
+  const updateColumnOptions = React.useCallback((columnId: string, options: Record<string, unknown>) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.id === columnId ? { ...col, options } : col
+      )
+    )
+  }, [])
+
   // 冻结列（包含此列及左侧所有列）
   const freezeColumns = React.useCallback((columnId: string) => {
     const columnIndex = columns.findIndex((col) => col.id === columnId)
@@ -292,12 +364,15 @@ function TableProvider({ data, children }: TableProviderProps) {
     selectAll,
     editingCellId,
     editingValue,
+    lockedCellId,
     columnWidths,
+    allColumns: columns,
     hiddenColumns,
     frozenColumns,
     groupColumnId,
     collapsedGroups,
     selectedColumnId,
+    readOnly,
   }
 
   // 切换分组展开/收起
@@ -331,18 +406,34 @@ function TableProvider({ data, children }: TableProviderProps) {
     })
   }, [selectedRows])
 
+  // 根据列类型生成默认单元格值
+  const getDefaultCellValue = (col: ColumnDef): string | boolean | number => {
+    switch (col.type) {
+      case "checkbox": return false
+      case "button": return (col.options?.label as string) || ""
+      case "icon": return (col.options?.iconName as string) || ""
+      default: return ""
+    }
+  }
+
+  // 根据列定义生成单元格
+  const createCellFromColumn = (col: ColumnDef, rowId: string, extra?: Partial<CellData>): CellData => ({
+    id: `${rowId}-${col.id}`,
+    type: col.type,
+    value: getDefaultCellValue(col),
+    width: col.width === "auto" ? 40 : col.width ?? 200,
+    ...extra,
+  })
+
   // 在分组内插入新行
   const insertRowInGroup = React.useCallback((groupValue: string, groupColumnId: string) => {
     const groupRowIndex = columns.findIndex(col => col.id === groupColumnId)
     if (groupRowIndex === -1) return
 
     const newRowId = generateId()
-    const newCells: CellData[] = columns.map((col) => ({
-      id: `${newRowId}-${col.id}`,
-      type: col.type === "checkbox" ? "checkbox" : "text",
-      value: col.id === groupColumnId ? groupValue : (col.type === "checkbox" ? false : ""),
-      width: col.width === "auto" ? 40 : col.width ?? 200,
-    }))
+    const newCells: CellData[] = columns.map((col) =>
+      createCellFromColumn(col, newRowId, col.id === groupColumnId ? { value: groupValue } : undefined)
+    )
 
     // 找到该组最后一个行的索引，插入到其后
     let insertIndex = rows.length
@@ -363,6 +454,16 @@ function TableProvider({ data, children }: TableProviderProps) {
     })
   }, [columns, rows])
 
+  // 非分组情况下在表格底部插入新行
+  const insertRow = React.useCallback(() => {
+    const newRowId = generateId()
+    const newCells: CellData[] = columns.map((col) =>
+      createCellFromColumn(col, newRowId)
+    )
+
+    setRows((prev) => [...prev, { id: newRowId, cells: newCells }])
+  }, [columns])
+
   // 更新分组标题（同步更新该组所有行的分组列单元格）
   const updateGroupValues = React.useCallback((oldGroupValue: string, newGroupValue: string, groupColumnId: string) => {
     const groupRowIndex = columns.findIndex(col => col.id === groupColumnId)
@@ -382,12 +483,23 @@ function TableProvider({ data, children }: TableProviderProps) {
     )
   }, [columns])
 
+  // 锁定单元格（与选中态互斥）
+  const lockCell = React.useCallback((cellId: string | null) => {
+    setLockedCellId(cellId)
+    // 进入锁定态时清空选中态
+    if (cellId) {
+      setSelectedRows(new Set())
+      setSelectedColumnId(null)
+    }
+  }, [])
+
   // 选中列
   const selectColumn = React.useCallback((columnId: string | null) => {
     setSelectedColumnId(columnId)
     // 选中列时清空选中行（互斥）
     if (columnId) {
       setSelectedRows(new Set())
+      setLockedCellId(null)
     }
   }, [])
 
@@ -433,6 +545,99 @@ function TableProvider({ data, children }: TableProviderProps) {
     setSelectedColumnId(sourceColumnId)
   }, [columns])
 
+  // 行列数调整
+  const setDimension = React.useCallback((targetRowCount: number, targetColumnCount: number) => {
+    // 计算排除列数（仅 checkbox）
+    const hasCheckbox = columns.some(col => col.type === "checkbox")
+    const excludeColumnCount = hasCheckbox ? 1 : 0
+    const currentDataColumnCount = columns.length - excludeColumnCount
+
+    // 用局部变量追踪最新的列定义（React state 异步更新，闭包中还是旧值）
+    let latestColumns = columns
+
+    // 先处理列变化（先列后行，确保新行包含正确的列数）
+    if (targetColumnCount > currentDataColumnCount) {
+      const columnsToAdd = targetColumnCount - currentDataColumnCount
+      const newColumns: ColumnDef[] = []
+      const newColumnWidths: Record<string, number> = {}
+
+      for (let i = 0; i < columnsToAdd; i++) {
+        const newColumnId = generateId()
+        const columnNumber = columns.length + i + 1 - excludeColumnCount
+        newColumns.push({
+          id: newColumnId,
+          type: "text",
+          title: `列${columnNumber}`,
+          width: 200,
+        })
+        newColumnWidths[newColumnId] = 200
+      }
+
+      latestColumns = [...columns, ...newColumns]
+      setColumns(latestColumns)
+      setColumnWidths((prev) => ({ ...prev, ...newColumnWidths }))
+
+      // 为所有现有行追加新单元格
+      setRows((prev) =>
+        prev.map((row) => {
+          const newCells: CellData[] = newColumns.map((col) => ({
+            id: `${col.id}-${row.id}`,
+            type: "text",
+            value: "",
+            width: 200,
+          }))
+          return { ...row, cells: [...row.cells, ...newCells] }
+        })
+      )
+    } else if (targetColumnCount < currentDataColumnCount) {
+      const columnsToRemove = currentDataColumnCount - targetColumnCount
+      const startIndex = columns.length - columnsToRemove
+      const columnsToRemoveIds = columns.slice(startIndex).map(col => col.id)
+
+      latestColumns = columns.slice(0, startIndex)
+      setColumns(latestColumns)
+      setColumnWidths((prev) => {
+        const newWidths = { ...prev }
+        columnsToRemoveIds.forEach(id => delete newWidths[id])
+        return newWidths
+      })
+      setHiddenColumns((prev) => {
+        const next = new Set(prev)
+        columnsToRemoveIds.forEach(id => next.delete(id))
+        return next
+      })
+
+      // 删除所有行中对应的单元格
+      setRows((prev) =>
+        prev.map((row) => ({
+          ...row,
+          cells: row.cells.slice(0, startIndex),
+        }))
+      )
+    }
+
+    // 处理行变化
+    const currentRowCount = rows.length
+
+    if (targetRowCount > currentRowCount) {
+      const rowsToAdd = targetRowCount - currentRowCount
+      const newRowList: RowData[] = []
+
+      // 使用最新的列定义生成新行
+      for (let i = 0; i < rowsToAdd; i++) {
+        const newRowId = generateId()
+        const newCells: CellData[] = latestColumns.map((col) =>
+          createCellFromColumn(col, newRowId)
+        )
+        newRowList.push({ id: newRowId, cells: newCells })
+      }
+
+      setRows((prev) => [...prev, ...newRowList])
+    } else if (targetRowCount < currentRowCount) {
+      setRows((prev) => prev.slice(0, targetRowCount))
+    }
+  }, [columns, rows])
+
   const actions: TableActions = {
     toggleSelectAll,
     toggleRowSelect,
@@ -441,37 +646,62 @@ function TableProvider({ data, children }: TableProviderProps) {
     finishEdit,
     cancelEdit,
     updateEditingValue,
+    lockCell,
+    updateCellValue,
     updateColumnWidth,
     insertColumnLeft,
     insertColumnRight,
     hideColumn,
+    toggleColumnVisibility,
     deleteColumn,
     updateColumnType,
     updateColumnTitle,
+    updateColumnOptions,
     freezeColumns,
     setGroupColumn,
     toggleGroupCollapse,
     toggleGroupSelect,
     insertRowInGroup,
+    insertRow,
     updateGroupValues,
     selectColumn,
     moveColumnOrder,
+    setDimension,
   }
 
-  // 过滤隐藏列后的数据
-  const visibleData: TableData = {
+  // Memo 化：过滤隐藏列后的数据
+  const visibleData: TableData = React.useMemo(() => ({
     columns: columns.filter((col) => !hiddenColumns.has(col.id)),
     rows: rows.map((row) => ({
       ...row,
       cells: row.cells.filter((_, i) => !hiddenColumns.has(columns[i]?.id ?? "")),
     })),
-  }
+    allRows: rows,
+  }), [columns, rows, hiddenColumns])
+
+  // Memo 化：列 ID → ColumnDef 映射，替代 Array.find()
+  const columnMap = React.useMemo(() => {
+    const map = new Map<string, ColumnDef>()
+    visibleData.columns.forEach(col => map.set(col.id, col))
+    return map
+  }, [visibleData.columns])
+
+  // Memo 化每个 Context value
+  const dataValue = React.useMemo<TableData>(() => ({ ...visibleData, columnMap }), [visibleData, columnMap])
+  const stateValue = React.useMemo(() => state, [state])
+  // actions 是稳定引用（所有回调都用 useCallback），不需要额外 memo
 
   return (
-    <TableContext.Provider value={{ state, actions, data: visibleData }}>
-      {children}
-    </TableContext.Provider>
+    <TableActionsContext.Provider value={actions}>
+      <TableDataContext.Provider value={dataValue}>
+        <TableStateContext.Provider value={stateValue}>
+          <CellRenderersContext.Provider value={mergedRenderers}>
+            {children}
+          </CellRenderersContext.Provider>
+        </TableStateContext.Provider>
+      </TableDataContext.Provider>
+    </TableActionsContext.Provider>
   )
 }
 
-export { TableContext, TableProvider, useTable }
+export { TableProvider, useTable, useTableActions, useTableData, useTableState, CellRenderersContext }
