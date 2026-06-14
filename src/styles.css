@@ -229,3 +229,81 @@
 [data-slot="data-table"][data-resizing="true"] [data-slot="cell"] {
   pointer-events: none !important;
 }
+
+/* ========================================
+   Sonner Toast - Vdesign 设计系统规范
+   sonner 运行时注入的 [data-styled='true'] 选择器特异性高于 class，
+   因此字号、行高等核心属性需要 !important
+   ======================================== */
+
+/* 容器 */
+.vdesign-toaster {
+  font-family: var(--font-sans);
+}
+
+/* Toast 卡片 - base 尺寸 */
+.vdesign-toast {
+  font-size: 14px !important;
+  line-height: 24px !important;
+  padding: 8px 12px;
+  border-radius: 8px;
+  gap: 8px;
+  background-color: var(--white-100);
+  border: 1px solid var(--neutral-2);
+  color: var(--black-85);
+  box-shadow: none;
+}
+
+.vdesign-toast [data-icon] {
+  height: 16px;
+  width: 16px;
+}
+
+/* Toast 卡片 - lg 尺寸 */
+.vdesign-toast.vdesign-toast-lg {
+  font-size: 16px !important;
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+
+.vdesign-toast.vdesign-toast-lg [data-icon] {
+  height: 18px;
+  width: 18px;
+}
+
+/* 标题 */
+.vdesign-toast-title {
+  font-weight: 500;
+  line-height: 24px !important;
+  color: inherit;
+}
+
+/* 描述 */
+.vdesign-toast-description {
+  color: var(--black-55);
+}
+
+/* 语义色 */
+.vdesign-toast-success {
+  background-color: var(--success-1);
+  border-color: var(--success-3);
+  color: var(--success-6);
+}
+
+.vdesign-toast-info {
+  background-color: var(--brand-1);
+  border-color: var(--brand-3);
+  color: var(--brand-6);
+}
+
+.vdesign-toast-warning {
+  background-color: var(--warning-1);
+  border-color: var(--warning-3);
+  color: var(--warning-6);
+}
+
+.vdesign-toast-error {
+  background-color: var(--error-1);
+  border-color: var(--error-3);
+  color: var(--error-6);
+}

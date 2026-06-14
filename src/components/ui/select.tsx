@@ -4,21 +4,21 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const selectTriggerVariants = cva(
-  "border bg-white-100 outline-none transition-all font-normal flex items-center justify-between gap-2 [&>svg]:shrink-0",
+  "border bg-white-100 outline-none transition-all font-normal flex items-center",
   {
     variants: {
       variant: {
         basic:
-          "border-neutral-2 hover:border-brand-5 hover:cursor-pointer focus-visible:border-brand-6 focus-visible:shadow-[0_0_0_3px_var(--brand-2)] text-black-85 placeholder:text-black-25 [&>svg]:text-black-55",
+          "border-neutral-2 hover:border-brand-5 hover:cursor-pointer data-[state=open]:border-brand-6 data-[state=open]:shadow-[0_0_0_3px_var(--brand-2)] text-black-85 placeholder:text-black-25 [&>svg]:text-black-55",
         invalid:
-          "border-error-5 hover:border-error-5 hover:cursor-pointer focus-visible:border-brand-6 focus-visible:shadow-[0_0_0_3px_var(--brand-2)] text-black-85 placeholder:text-black-25 [&>svg]:text-black-55",
+          "border-error-5 hover:border-error-5 hover:cursor-pointer data-[state=open]:border-brand-6 data-[state=open]:shadow-[0_0_0_3px_var(--brand-2)] text-black-85 placeholder:text-black-25 [&>svg]:text-black-55",
         disabled:
           "border-neutral-2 bg-neutral-1 text-black-25 cursor-not-allowed placeholder:text-black-25 [&>svg]:text-black-25",
       },
       size: {
-        base: "h-8 rounded-lg px-2 text-sm leading-6 [&>svg]:size-4",
-        sm: "h-6 rounded-md px-1.5 text-xs leading-5 [&>svg]:size-[14px]",
-        lg: "h-10 rounded-xl px-3 text-base leading-6 [&>svg]:size-[18px]",
+        base: "h-8 rounded-lg px-2 text-sm leading-6 gap-1.5 [&>svg]:size-4",
+        sm: "h-6 rounded-md px-1.5 text-xs leading-5 gap-1 [&>svg]:size-[14px]",
+        lg: "h-10 rounded-xl px-3 text-base leading-6 gap-2 [&>svg]:size-[18px]",
       },
     },
     defaultVariants: {
@@ -47,10 +47,13 @@ function SelectTrigger({
   className,
   variant,
   size,
+  leftIcon,
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> &
-  VariantProps<typeof selectTriggerVariants>) {
+  VariantProps<typeof selectTriggerVariants> & {
+    leftIcon?: string
+  }) {
   const iconSize = size === "sm" ? "size-[14px]" : size === "lg" ? "size-[18px]" : "size-4"
   return (
     <SelectPrimitive.Trigger
@@ -58,9 +61,20 @@ function SelectTrigger({
       className={cn(selectTriggerVariants({ variant, size, className }))}
       {...props}
     >
-      {children}
+      <span className={cn("flex items-center flex-1 min-w-0", size === "sm" ? "gap-1" : size === "lg" ? "gap-2" : "gap-1.5")}>
+        {leftIcon && (
+          <svg
+            aria-hidden="true"
+            className={cn("shrink-0 text-black-55", iconSize)}
+            style={{ fill: "currentColor" }}
+          >
+            <use xlinkHref={`#${leftIcon}`} />
+          </svg>
+        )}
+        {children}
+      </span>
       <SelectPrimitive.Icon asChild>
-        <svg aria-hidden="true" className={cn("shrink-0", iconSize)} style={{ fill: "currentColor" }}>
+        <svg aria-hidden="true" className={cn("shrink-0 ml-auto", iconSize)} style={{ fill: "currentColor" }}>
           <use xlinkHref="#icon-chevron-down" />
         </svg>
       </SelectPrimitive.Icon>
@@ -92,20 +106,21 @@ function SelectContent({
 }: React.ComponentProps<typeof SelectPrimitive.Content> &
   VariantProps<typeof selectContentVariants>) {
   return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        data-slot="select-content"
-        className={cn(
-          selectContentVariants({ size, className }),
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[side=bottom]:slide-in-from-top-2"
-        )}
-        {...props}
-      >
-        <SelectPrimitive.Viewport className="flex flex-col p-1 group/options">
-          {children}
-        </SelectPrimitive.Viewport>
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
+    <SelectPrimitive.Content
+      data-slot="select-content"
+      position="popper"
+      sideOffset={4}
+      className={cn(
+        selectContentVariants({ size, className }),
+        "w-[var(--radix-select-trigger-width)]",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[side=bottom]:slide-in-from-top-2"
+      )}
+      {...props}
+    >
+      <SelectPrimitive.Viewport className="flex flex-col p-1 group/options">
+        {children}
+      </SelectPrimitive.Viewport>
+    </SelectPrimitive.Content>
   )
 }
 

@@ -77,8 +77,26 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 分组列
   const [groupColumnId, setGroupColumnId] = React.useState<string | null>(() => data.groupColumnId ?? null)
-  // 收起的分组
-  const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(new Set())
+  // 收起的分组：默认展开第一个分组，收起其他分组
+  const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(() => {
+    if (!data.groupColumnId) return new Set()
+    // 找到分组列索引
+    const groupColumnIndex = data.columns.findIndex(col => col.id === data.groupColumnId)
+    if (groupColumnIndex === -1) return new Set()
+    // 提取所有分组值
+    const groupValues = new Set(data.rows.map(row => String(row.cells[groupColumnIndex]?.value ?? "")))
+    // 排序后移除第一个分组值（空值排末尾）
+    const sortedValues = Array.from(groupValues).sort((a, b) => {
+      if (!a && b) return 1
+      if (a && !b) return -1
+      return 0
+    })
+    const firstValue = sortedValues[0]
+    if (!firstValue) return new Set()
+    const remaining = new Set(sortedValues)
+    remaining.delete(firstValue)
+    return remaining
+  })
 
   // 选择状态
   const [selectedRows, setSelectedRows] = React.useState<Set<string>>(new Set())

@@ -2,6 +2,8 @@
 
 核心原则：**轻量、专业、规范化**
 
+**Vdesign 是独立的设计系统。** 所有组件的尺寸、间距、颜色、字号、圆角等视觉属性必须严格对齐 Vdesign 自身的 token 体系（定义在 `src/styles.css`）。外部库（shadcn、Radix、sonner 等）仅作为实现参考或底层原语，其默认样式必须被完全覆盖，不得泄露到最终产物中。shadcn 等第三方规范仅用于沟通讨论，最终实现以 Vdesign 设计系统为准。
+
 ## 必须遵循
 
 1. **使用 CVA 定义变体** - 通过 `class-variance-authority` 配置 variant/size 等属性

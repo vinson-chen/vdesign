@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Drawer,
   DrawerContent,
@@ -18,8 +19,6 @@ import type { ColorScaleConfig } from "@/lib/color-scale"
 
 // 卡片组件
 interface CardProps {
-  name?: string // 旧格式：组件名（左侧）
-  value?: string // 旧格式：参数值（右侧）
   children?: React.ReactNode // 示例内容
   exampleStyle?: React.CSSProperties // 示例区样式
   onClick?: () => void
@@ -29,8 +28,6 @@ interface CardProps {
 }
 
 export function Card({
-  name,
-  value,
   children,
   exampleStyle,
   onClick,
@@ -52,9 +49,6 @@ export function Card({
     setCopied(true)
     timeoutRef.current = setTimeout(() => setCopied(false), 2000)
   }
-
-  // 判断是否使用新格式
-  const useNewFormat = label || copyText || items
 
   return (
     <div
@@ -80,23 +74,29 @@ export function Card({
           borderTop: "1px solid var(--neutral-2)",
         }}
       >
-        {useNewFormat ? (
-          <>
-            {/* 左侧：单按钮或多按钮 */}
-            {items && items.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {items.map((item) => (
+        {/* 左侧：单按钮或多按钮 */}
+        {items && items.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {items.map((item) => (
+              <Tooltip key={item.label}>
+                <TooltipTrigger asChild>
                   <Button
-                    key={item.label}
                     variant="ghost"
                     size="sm"
                     onClick={(e) => handleCopy(item.copyText, e)}
                   >
                     {item.label}
                   </Button>
-                ))}
-              </div>
-            ) : (
+                </TooltipTrigger>
+                <TooltipContent side="top" size="base">
+                  <p>{item.copyText}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
@@ -104,50 +104,25 @@ export function Card({
               >
                 {label}
               </Button>
-            )}
-            {/* 右侧：已复制提示 */}
-            {copied && (
-              <p
-                className="font-mono"
-                style={{
-                  color: "var(--neutral-4)",
-                  fontSize: "12px",
-                  lineHeight: "20px",
-                  fontWeight: 400,
-                }}
-              >
-                已复制
-              </p>
-            )}
-          </>
-        ) : (
-          <>
-            {/* 兼容旧格式 */}
-            <p
-              className="font-mono"
-              style={{
-                color: "var(--neutral-5)",
-                fontSize: "12px",
-                lineHeight: "20px",
-                fontWeight: 400,
-              }}
-            >
-              {name}
-            </p>
-            {value && (
-              <p
-                className="font-mono"
-                style={{
-                  color: "var(--neutral-4)",
-                  fontSize: "12px",
-                  lineHeight: "20px",
-                  fontWeight: 400,
-                }}
-              >
-                {value}
-              </p>
-            )}
-          </>
+            </TooltipTrigger>
+            <TooltipContent side="top" size="base">
+              <p>{copyText || label}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {/* 右侧：已复制提示 */}
+        {copied && (
+          <p
+            className="font-mono"
+            style={{
+              color: "var(--neutral-4)",
+              fontSize: "12px",
+              lineHeight: "20px",
+              fontWeight: 400,
+            }}
+          >
+            已复制
+          </p>
         )}
       </div>
     </div>
@@ -168,6 +143,15 @@ export function CardGrid({ cols = 6, children }: CardGridProps) {
     6: "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6",
   }
   return <div className={`grid ${gridClass[cols]} gap-4`}>{children}</div>
+}
+
+// 纯展示表格容器组件：自适应内容宽度，不超过父容器
+export function DemoTableWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="shrink min-h-0 bg-white-100 overflow-auto overscroll-none border border-neutral-2 w-fit max-w-full">
+      {children}
+    </div>
+  )
 }
 
 // 区块标题组件

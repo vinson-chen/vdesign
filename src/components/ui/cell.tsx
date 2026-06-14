@@ -11,7 +11,7 @@ const cellVariants = cva(
         defaultHover: "bg-neutral-1",
         selected: "bg-brand-1",
         locked: "bg-brand-1",
-        editing: "bg-success-2",
+        editing: "bg-brand-2",
         header: "bg-neutral-1 hover:bg-neutral-2 font-medium has-[[data-state=open]]:bg-neutral-2",
         headerSelected: "bg-neutral-2 font-medium",
       },

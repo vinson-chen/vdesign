@@ -21,7 +21,7 @@ export interface ColorScaleConfig {
  */
 export const DEFAULT_SCALE_CONFIG: ColorScaleConfig[] = [
   { name: '1', mixColor: '#FFFFFF', opacity: 92, saturationMult: 1.4 },
-  { name: '2', mixColor: '#FFFFFF', opacity: 84, saturationMult: 1.3 },
+  { name: '2', mixColor: '#FFFFFF', opacity: 88, saturationMult: 1.3 },
   { name: '3', mixColor: '#FFFFFF', opacity: 76, saturationMult: 1.2 },
   { name: '4', mixColor: '#FFFFFF', opacity: 16, saturationMult: 1.1 },
   { name: '5', mixColor: '', opacity: 0, saturationMult: 1 },

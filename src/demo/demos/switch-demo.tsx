@@ -1,25 +1,18 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { SectionTitle, DemoTableWrapper } from "./shared"
 
 // ============================================
 // 本体论命名工具
 // ============================================
 
-function ontoName(variant: string, size: string): string {
-  const sizeParts = size.replace(/([A-Z])/g, "-$1").toLowerCase().split("-").filter(Boolean)
-  return ["select", variant, ...sizeParts].join("-")
+function ontoName(slot: string, size: string): string {
+  return ["switch", slot, size].join("-")
 }
 
 function getDisplaySize(size: string): string {
@@ -27,24 +20,18 @@ function getDisplaySize(size: string): string {
 }
 
 // ============================================
-// 自定义单元格渲染器：选择框，默认显示复制按钮
+// 自定义单元格渲染器
 // ============================================
 
-const selectOptions = [
-  { value: "option1", label: "选项一" },
-  { value: "option2", label: "选项二" },
-  { value: "option3", label: "选项三" },
-]
-
-function SelectCellRenderer({ value, options }: CellRendererProps) {
+// Switch 渲染器
+function SwitchCellRenderer({ value, options }: CellRendererProps) {
   const [copied, setCopied] = React.useState(false)
+  const [checked, setChecked] = React.useState((options?.checked as boolean) ?? false)
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const copyText = String(value)
-  const variant = (options?.variant as "basic" | "invalid" | "disabled") || "basic"
   const size = (options?.size as "base" | "sm" | "lg") || "base"
-  const leftIcon = (options?.leftIcon as string) || undefined
-  const isDisabled = variant === "disabled"
+  const disabled = (options?.disabled as boolean) ?? false
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -62,18 +49,7 @@ function SelectCellRenderer({ value, options }: CellRendererProps) {
 
   return (
     <div className="flex items-center w-full h-full">
-      <Select variant={isDisabled ? "disabled" : undefined}>
-        <SelectTrigger variant={variant} size={size} leftIcon={leftIcon} className="flex-1 min-w-0">
-          <SelectValue placeholder="请选择" />
-        </SelectTrigger>
-        <SelectContent size={size}>
-          {selectOptions.map((item) => (
-            <SelectItem key={item.value} value={item.value} size={size}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Switch size={size} checked={checked} disabled={disabled} onChange={setChecked} />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -98,26 +74,26 @@ function SelectCellRenderer({ value, options }: CellRendererProps) {
 
 interface SlotConfig {
   name: string
+  renderer: string
   props: Record<string, unknown>
 }
 
 const slotConfigs: SlotConfig[] = [
-  { name: "basic", props: {} },
-  { name: "iconLeft", props: { variant: "basic", leftIcon: "icon-user" } },
-  { name: "invalid", props: {} },
-  { name: "disabled", props: {} },
+  { name: "unchecked", renderer: "switchCell", props: { checked: false } },
+  { name: "checked", renderer: "switchCell", props: { checked: true } },
+  { name: "disabledUnchecked", renderer: "switchCell", props: { checked: false, disabled: true } },
+  { name: "disabledChecked", renderer: "switchCell", props: { checked: true, disabled: true } },
 ]
 
 const sizeConfigs = ["base", "sm", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
-    { id: "checkbox", type: "checkbox" as const, width: 200 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "basic", type: "select" as const, title: "basic", width: 200 },
-    { id: "iconLeft", type: "select" as const, title: "iconLeft", width: 200 },
-    { id: "invalid", type: "select" as const, title: "invalid", width: 200 },
-    { id: "disabled", type: "select" as const, title: "disabled", width: 200 },
+    { id: "unchecked", type: "switchCell" as const, title: "unchecked", width: 200 },
+    { id: "checked", type: "switchCell" as const, title: "checked", width: 200 },
+    { id: "disabledUnchecked", type: "switchCell" as const, title: "disabled unchecked", width: 200 },
+    { id: "disabledChecked", type: "switchCell" as const, title: "disabled checked", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -125,14 +101,12 @@ function generateTableData(): TableData {
     return {
       id: `row-${size}`,
       cells: [
-        { id: `cb-${size}`, value: false },
         { id: `c-size-${size}`, value: displaySize },
         ...slotConfigs.map((slot) => ({
           id: `c-${slot.name}-${size}`,
           value: ontoName(slot.name, size),
-          type: "select" as const,
+          type: slot.renderer as "switchCell",
           options: {
-            variant: slot.name as "basic" | "invalid" | "disabled",
             size,
             ...slot.props,
           },
@@ -141,27 +115,26 @@ function generateTableData(): TableData {
     }
   })
 
-  // 初始隐藏多选列，按"尺寸"分组
-  return { columns, rows, hiddenColumns: new Set(["checkbox"]), groupColumnId: "size" }
+  return { columns, rows, groupColumnId: "size" }
 }
 
 // ============================================
 // 页面组件
 // ============================================
 
-export function SelectPage() {
+export function SwitchPage() {
   const tableData = React.useMemo(() => generateTableData(), [])
 
   const cellRenderers = React.useMemo(
     () => ({
-      select: SelectCellRenderer,
+      switchCell: SwitchCellRenderer,
     }),
     []
   )
 
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
-      <SectionTitle title="选择 select" />
+      <SectionTitle title="开关 Switch" />
       <DemoTableWrapper>
         <DataTable
           data={tableData}

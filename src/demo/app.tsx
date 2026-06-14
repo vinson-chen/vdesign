@@ -1,22 +1,29 @@
 import * as React from "react"
 import "../styles.css"
 import { NavigationItem } from "@/components/ui/navigation-item"
+import { Toaster } from "@/components/ui/sonner"
 
 // Demo 页面组件
 import { ColorPage } from "./demos/color-demo"
 import { TypographyPage } from "./demos/typography-demo"
 import { IconPage } from "./demos/icon-demo"
-import { CardPage } from "./demos/card-demo"
 import { ButtonPage } from "./demos/button2-demo"
 import { InputPage } from "./demos/input-demo"
 import { SelectPage } from "./demos/select-demo"
-import { ItemPage } from "./demos/item-demo"
-import { MenuPage } from "./demos/menu-demo"
+import { NavigationPage } from "./demos/navigation-demo"
+import { RadioPage } from "./demos/radio-demo"
+import { CheckboxPage } from "./demos/checkbox-demo"
+import { SwitchPage } from "./demos/switch-demo"
+import { PaginationPage } from "./demos/pagination-demo"
+import { PopoverPage } from "./demos/popover-demo"
 import { DialogPage } from "./demos/dialog-demo"
-import { TablePage, LayoutPage } from "./demos/table-demo"
+import { SonnerPage } from "./demos/sonner-demo"
+import { TooltipPage } from "./demos/tooltip-demo"
+import { TablePage } from "./demos/table-demo"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 // 页面类型
-type PageType = "color" | "typography" | "icon" | "card" | "button" | "input" | "select" | "item" | "menu" | "dialog" | "table" | "layout"
+type PageType = "color" | "typography" | "icon" | "button" | "input" | "select" | "navigation" | "radio" | "checkbox" | "switch" | "pagination" | "popover" | "dialog" | "sonner" | "tooltip" | "table"
 
 function App() {
   const [activePage, setActivePage] = React.useState<PageType>(() => {
@@ -25,15 +32,19 @@ function App() {
       "/color": "color",
       "/typography": "typography",
       "/icon": "icon",
-      "/card": "card",
       "/button": "button",
       "/input": "input",
       "/select": "select",
-      "/item": "item",
-      "/menu": "menu",
+      "/navigation": "navigation",
+      "/radio": "radio",
+      "/checkbox": "checkbox",
+      "/switch": "switch",
+      "/pagination": "pagination",
+      "/popover": "popover",
       "/dialog": "dialog",
+      "/sonner": "sonner",
+      "/tooltip": "tooltip",
       "/table": "table",
-      "/layout": "layout",
     }
     return pageMap[hash] || "color"
   })
@@ -50,9 +61,15 @@ function App() {
         "/button": "button",
         "/input": "input",
         "/select": "select",
-        "/item": "item",
-        "/menu": "menu",
+        "/navigation": "navigation",
+        "/radio": "radio",
+        "/checkbox": "checkbox",
+        "/switch": "switch",
+        "/pagination": "pagination",
+        "/popover": "popover",
         "/dialog": "dialog",
+        "/sonner": "sonner",
+        "/tooltip": "tooltip",
         "/table": "table",
         "/layout": "layout",
       }
@@ -70,15 +87,19 @@ function App() {
     { key: "color", label: "颜色 color" },
     { key: "typography", label: "排版 typography" },
     { key: "icon", label: "图标 icon" },
-    { key: "card", label: "卡片 card" },
     { key: "button", label: "按钮 button" },
     { key: "input", label: "输入 input" },
     { key: "select", label: "选择 select" },
-    { key: "item", label: "选项 item" },
-    { key: "menu", label: "菜单 menu" },
+    { key: "navigation", label: "导航 NavigationItem" },
+    { key: "radio", label: "单选 Radio" },
+    { key: "checkbox", label: "多选 Checkbox" },
+    { key: "switch", label: "开关 Switch" },
+    { key: "pagination", label: "分页 Pagination" },
+    { key: "popover", label: "面板 Popover" },
     { key: "dialog", label: "浮层 floating" },
+    { key: "sonner", label: "通知 sonner" },
+    { key: "tooltip", label: "提示 tooltip" },
     { key: "table", label: "表格 table" },
-    { key: "layout", label: "布局 layout" },
   ]
 
   // 页面组件映射
@@ -86,15 +107,19 @@ function App() {
     color: <ColorPage />,
     typography: <TypographyPage />,
     icon: <IconPage />,
-    card: <CardPage />,
     button: <ButtonPage />,
     input: <InputPage />,
     select: <SelectPage />,
-    item: <ItemPage />,
-    menu: <MenuPage />,
+    navigation: <NavigationPage />,
+    radio: <RadioPage />,
+    checkbox: <CheckboxPage />,
+    switch: <SwitchPage />,
+    pagination: <PaginationPage />,
+    popover: <PopoverPage />,
     dialog: <DialogPage />,
+    sonner: <SonnerPage />,
+    tooltip: <TooltipPage />,
     table: <TablePage />,
-    layout: <LayoutPage />,
   }
 
   return (
@@ -124,8 +149,11 @@ function App() {
 
       {/* 右侧内容区 - 独立滚动 */}
       <main className="flex-1 overflow-y-auto p-8">
-        {pageComponents[activePage]}
+        <TooltipProvider>
+          {pageComponents[activePage]}
+        </TooltipProvider>
       </main>
+      <Toaster />
     </div>
   )
 }

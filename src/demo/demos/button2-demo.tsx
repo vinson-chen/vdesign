@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
 import { defaultCellRenderers } from "@/components/ui/cell-renderers"
 import type { CellRendererProps, TableData } from "@/types/table"
-import { SectionTitle } from "./shared"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { SectionTitle, DemoTableWrapper } from "./shared"
 
 // ============================================
 // 本体论命名工具
@@ -53,8 +54,6 @@ function DemoButtonCellRenderer({ value, options, isCellHovering }: CellRenderer
     }
   }, [])
 
-  const showCopy = isCellHovering || copied
-
   return (
     <div className="flex items-center w-full h-full">
       <Button
@@ -67,15 +66,20 @@ function DemoButtonCellRenderer({ value, options, isCellHovering }: CellRenderer
       >
         {label}
       </Button>
-      {showCopy && (
-        <Button
-          variant="ghost"
-          size="iconSm"
-          leftIcon={copied ? "icon-check" : "icon-copy"}
-          onClick={handleCopy}
-          className="ml-auto"
-        />
-      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="iconSm"
+            leftIcon={copied ? "icon-check" : "icon-copy"}
+            onClick={handleCopy}
+            className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
+          />
+        </TooltipTrigger>
+        <TooltipContent side="top" size="base">
+          <p>{copyText}</p>
+        </TooltipContent>
+      </Tooltip>
     </div>
   )
 }
@@ -101,7 +105,6 @@ const variantConfigs: VariantConfig[] = [
 function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 200 },
-    { id: "variant", type: "text" as const, title: "类型", width: 200 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
     { id: "text", type: "button" as const, title: "text", width: 200 },
     { id: "leftIcon", type: "button" as const, title: "leftIcon", width: 200 },
@@ -121,7 +124,6 @@ function generateTableData(): TableData {
         id: `row-${v.name}-${size}`,
         cells: [
           { id: `cb-${v.name}-${size}`, value: false },
-          { id: `c-variant-${v.name}-${size}`, value: v.name },
           { id: `c-size-${v.name}-${size}`, value: displaySize },
           {
             id: `c-text-${v.name}-${size}`,
@@ -180,14 +182,14 @@ export function ButtonPage() {
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="按钮 button" />
-      <div className="shrink min-h-0 bg-white-100 overflow-auto overscroll-none border border-neutral-2">
+      <DemoTableWrapper>
         <DataTable
           data={tableData}
           variant="plain"
           cellRenderers={cellRenderers}
           readOnly
         />
-      </div>
+      </DemoTableWrapper>
     </div>
   )
 }

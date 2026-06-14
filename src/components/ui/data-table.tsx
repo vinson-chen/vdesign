@@ -20,7 +20,7 @@ import { HeaderCellHideManagerView } from "./header-cell-hide-manager"
 import { HeaderCellDimensionView } from "./header-cell-dimension"
 import { defaultCellRenderers, TextCellRenderer } from "./cell-renderers"
 
-const tableVariants = cva("flex w-max min-w-full flex-col relative", {
+const tableVariants = cva("flex flex-col relative", {
   variants: {
     variant: {
       base: "border border-neutral-2 bg-white-100",
@@ -303,10 +303,12 @@ interface RowRendererProps {
   style?: React.CSSProperties
   // 分组模式下分组列ID（用于表头顶部描边）
   groupColumnId?: string
+  // 表格内容是否溢出容器（用于控制冻结列投影）
+  hasOverflow?: boolean
 }
 
 // Memo 化 RowRenderer：避免父组件 hover 等状态变化时全量重渲染
-const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, columnIds, rowIndex, onCellResizeStart, onCellHoverEdge, onHeaderCellClick, onHeaderCellMouseDown, draggingColumnId, onCellHover, hoveringCellId, onBodyCellClick, frozenOffsets = {}, frozenWidth = 0, rowWidth: rowWidthProp, style, groupColumnId }: RowRendererProps) {
+const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, columnIds, rowIndex, onCellResizeStart, onCellHoverEdge, onHeaderCellClick, onHeaderCellMouseDown, draggingColumnId, onCellHover, hoveringCellId, onBodyCellClick, frozenOffsets = {}, frozenWidth = 0, rowWidth: rowWidthProp, style, groupColumnId, hasOverflow }: RowRendererProps) {
   const state = useTableState()
   const data = useTableData()
   const actions = useTableActions()
@@ -387,12 +389,14 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
               isFrozen && "sticky",
               isHeader && isFrozen && "z-20",
               !isHeader && isFrozen && "z-10",
-              isLastFrozen && "shadow-[2px_0_4px_-2px_var(--black-10)]",
+              isLastFrozen && hasOverflow && "shadow-[2px_0_4px_-2px_var(--black-10)]",
               // 光标
               showGrabCursor && "cursor-grab",
               showGrabbingCursor && "cursor-grabbing",
               // 分组模式下分组列的表头顶部描边
-              isHeader && groupColumnId && columnId === groupColumnId && "border-t-2 border-neutral-2"
+              isHeader && groupColumnId && columnId === groupColumnId && "border-t-2 border-neutral-2",
+              // readOnly 模式下去掉最后一列右描边，避免与容器描边重叠
+              state.readOnly && index === row.cells.length - 1 && "!border-r-0",
             )}
             style={isFrozen ? { left: frozenLeft } : undefined}
           >
@@ -447,10 +451,11 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
     && prev.frozenWidth === next.frozenWidth
     && prev.rowWidth === next.rowWidth
     && prev.groupColumnId === next.groupColumnId
+    && prev.hasOverflow === next.hasOverflow
 })
 
 // 分组标题行组件
-function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxWidth, frozenNonCheckboxWidth, isCollapsed, isGroupSelected, onToggle, onGroupSelect, groupColumnId, isCheckboxHidden }: {
+function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxWidth, frozenNonCheckboxWidth, isCollapsed, isGroupSelected, onToggle, onGroupSelect, groupColumnId, isCheckboxHidden, hasOverflow }: {
   groupValue: string
   rowCount: number
   frozenWidth: number
@@ -463,6 +468,7 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
   onGroupSelect: () => void
   groupColumnId: string
   isCheckboxHidden?: boolean
+  hasOverflow?: boolean
 }) {
   const { state, actions } = useTable()
   const cellId = `group-header-${groupValue}`
@@ -479,7 +485,7 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
   }
 
   // 隐藏 checkbox 列时，调整冻结宽度（减去 checkbox 列宽度）
-  const adjustedFrozenWidth = isCheckboxHidden ? frozenWidth - checkboxWidth : frozenWidth
+  const adjustedFrozenWidth = isCheckboxHidden ? frozenNonCheckboxWidth : frozenWidth
 
   return (
     <div
@@ -489,7 +495,10 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
     >
       {/* 冻结部分 */}
       <div
-        className="sticky left-0 z-10 flex shadow-[2px_0_4px_-2px_var(--black-10)] bg-white-100"
+        className={cn(
+          "sticky left-0 z-10 flex bg-white-100",
+          hasOverflow && "shadow-[2px_0_4px_-2px_var(--black-10)]"
+        )}
         style={{ width: `${adjustedFrozenWidth}px` }}
       >
         {/* 第一个单元格：checkbox 全选该组（仅当 checkbox 列可见时渲染） */}
@@ -551,7 +560,7 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
         )}
       </div>
       {/* 非冻结部分 */}
-      <Cell variant="default" isLastCell={false} className="flex-1">{''}</Cell>
+      <Cell variant="default" isLastCell={state.readOnly} className="flex-1">{''}</Cell>
     </div>
   )
 }
@@ -677,8 +686,8 @@ function DataTableInner({
   // 找到 checkbox 列（从 allColumns 中查找，因为 data.columns 可能已过滤隐藏列）
   const checkboxColumnId = state.allColumns.find(col => col.type === "checkbox")?.id
   const checkboxColumnWidth = checkboxColumnId ? (state.columnWidths[checkboxColumnId] ?? 40) : 40
-  // checkbox 列是否隐藏
-  const isCheckboxHidden = checkboxColumnId ? state.hiddenColumns.has(checkboxColumnId) : false
+  // checkbox 列是否隐藏（无 checkbox 列时视为隐藏）
+  const isCheckboxHidden = checkboxColumnId ? state.hiddenColumns.has(checkboxColumnId) : true
 
   // 计算冻结列中非 checkbox 列的总宽度，用于分组标题行第二个单元格
   const frozenNonCheckboxWidth = columnIds.reduce((sum, colId) => {
@@ -1188,6 +1197,9 @@ function DataTableInner({
   // 横向滚动位置（用于冻结列分割线补偿）
   const [scrollLeft, setScrollLeft] = React.useState(0)
 
+  // 表格内容是否溢出容器（用于冻结列投影显隐）
+  const [hasOverflow, setHasOverflow] = React.useState(false)
+
   // 监听父容器滚动
   React.useEffect(() => {
     const parent = tableRef.current?.parentElement
@@ -1198,6 +1210,23 @@ function DataTableInner({
     handleScroll() // 初始化
 
     return () => parent.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // 监听表格宽度是否溢出容器
+  React.useEffect(() => {
+    const el = tableRef.current
+    const parent = el?.parentElement
+    if (!el || !parent) return
+
+    const observer = new ResizeObserver(() => {
+      setHasOverflow(el.scrollWidth > parent.clientWidth)
+    })
+    observer.observe(el)
+    observer.observe(parent)
+    // 初始化
+    setHasOverflow(el.scrollWidth > parent.clientWidth)
+
+    return () => observer.disconnect()
   }, [])
 
   React.useEffect(() => {
@@ -1221,7 +1250,11 @@ function DataTableInner({
         ref={tableRef}
         data-slot="data-table"
         data-resizing={resizingColumnId || draggingColumnId ? "true" : undefined}
-        className={cn(tableVariants({ variant, className }))}
+        className={cn(
+          tableVariants({ variant }),
+          state.readOnly ? "w-fit max-w-full" : "w-max min-w-full",
+          className
+        )}
         onClick={handleTableClick}
         {...props}
       >
@@ -1240,6 +1273,7 @@ function DataTableInner({
             frozenWidth={frozenWidth}
             rowWidth={rowWidth}
             groupColumnId={state.groupColumnId ?? undefined}
+            hasOverflow={hasOverflow}
           />
         </div>
       </div>
@@ -1264,6 +1298,7 @@ function DataTableInner({
                   onGroupSelect={() => actions.toggleGroupSelect(group.groupValue, group.rows)}
                   groupColumnId={state.groupColumnId!}
                   isCheckboxHidden={isCheckboxHidden}
+                  hasOverflow={hasOverflow}
                 />
                 {!isCollapsed && (
                   <>
@@ -1280,6 +1315,7 @@ function DataTableInner({
                         frozenOffsets={frozenOffsets}
                         frozenWidth={frozenWidth}
                         rowWidth={rowWidth}
+                        hasOverflow={hasOverflow}
                       />
                     ))}
                     {/* 插入行：readOnly 模式下隐藏 */}
@@ -1316,6 +1352,7 @@ function DataTableInner({
                 frozenOffsets={frozenOffsets}
                 frozenWidth={frozenWidth}
                 rowWidth={rowWidth}
+                hasOverflow={hasOverflow}
               />
             ))}
             {/* 底部插入行：readOnly 模式下隐藏 */}

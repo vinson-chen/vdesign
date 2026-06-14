@@ -1,42 +1,18 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogField,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-  DialogClose,
-} from "@/components/ui/dialog"
-import {
-  Drawer,
-  DrawerTrigger,
-  DrawerContent,
-  DrawerHeader,
-  DrawerBody,
-  DrawerField,
-  DrawerFooter,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerClose,
-} from "@/components/ui/drawer"
+import { Checkbox } from "@/components/ui/checkbox"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { SectionTitle, DemoTableWrapper } from "./shared"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 // ============================================
 // 本体论命名工具
 // ============================================
 
 function ontoName(slot: string, size: string): string {
-  return ["dialog", slot, size].join("-")
+  return ["checkbox", slot, size].join("-")
 }
 
 function getDisplaySize(size: string): string {
@@ -47,13 +23,20 @@ function getDisplaySize(size: string): string {
 // 自定义单元格渲染器
 // ============================================
 
-// 弹窗渲染器
-function DialogCellRenderer({ value, options }: CellRendererProps) {
+const sizeTextClass = {
+  base: "text-sm text-black-85",
+  sm: "text-xs text-black-85",
+  lg: "text-base text-black-85",
+}
+
+// 横向组合 Checkbox 渲染器（3个选项横向排列）
+function CheckboxHorizontalGroupRenderer({ value, options }: CellRendererProps) {
   const [copied, setCopied] = React.useState(false)
+  const [checked, setChecked] = React.useState({ opt1: false, opt2: true, opt3: false })
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const copyText = String(value)
-  const size = (options?.size as "base" | "lg") || "base"
+  const size = (options?.size as "base" | "sm" | "lg") || "base"
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -69,41 +52,32 @@ function DialogCellRenderer({ value, options }: CellRendererProps) {
     }
   }, [])
 
-  const labelClass = size === "lg" ? "text-base" : "text-sm"
+  const gapClass = size === "sm" ? "gap-3" : size === "lg" ? "gap-5" : "gap-4"
 
   return (
-    <div className="flex items-center w-full h-full">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="outline" size={size} noShift>
-            打开弹窗
-          </Button>
-        </DialogTrigger>
-        <DialogContent size={size}>
-          <DialogHeader size={size}>
-            <DialogTitle size={size}>编辑资料</DialogTitle>
-            <DialogDescription size={size}>
-              在此修改您的个人资料，完成后点击保存。
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody size={size}>
-            <DialogField size={size}>
-              <label className={cn(labelClass, "font-medium text-black-85")}>姓名</label>
-              <Input size={size} defaultValue="张三" />
-            </DialogField>
-            <DialogField size={size}>
-              <label className={cn(labelClass, "font-medium text-black-85")}>用户名</label>
-              <Input size={size} defaultValue="@zhangsan" />
-            </DialogField>
-          </DialogBody>
-          <DialogFooter size={size}>
-            <DialogClose asChild>
-              <Button variant="outline" size={size}>取消</Button>
-            </DialogClose>
-            <Button size={size}>保存</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    <div className={cn("flex items-center w-full h-full", gapClass)}>
+      <Checkbox
+        size={size}
+        checked={checked.opt1}
+        onChange={(v) => setChecked({ ...checked, opt1: v })}
+      >
+        <span className={cn(sizeTextClass[size], "whitespace-nowrap")}>选项一</span>
+      </Checkbox>
+      <Checkbox
+        size={size}
+        checked={checked.opt2}
+        onChange={(v) => setChecked({ ...checked, opt2: v })}
+      >
+        <span className={cn(sizeTextClass[size], "whitespace-nowrap")}>选项二</span>
+      </Checkbox>
+      <Checkbox
+        size={size}
+        checked={checked.opt3}
+        disabled
+        onChange={(v) => setChecked({ ...checked, opt3: v })}
+      >
+        <span className={cn(sizeTextClass[size], "whitespace-nowrap")}>选项三</span>
+      </Checkbox>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -122,13 +96,14 @@ function DialogCellRenderer({ value, options }: CellRendererProps) {
   )
 }
 
-// 抽屉渲染器
-function DrawerCellRenderer({ value, options }: CellRendererProps) {
+// 纵向组合 Checkbox 渲染器（3个选项纵向排列）
+function CheckboxVerticalGroupRenderer({ value, options }: CellRendererProps) {
   const [copied, setCopied] = React.useState(false)
+  const [checked, setChecked] = React.useState({ opt1: false, opt2: true, opt3: false })
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const copyText = String(value)
-  const size = (options?.size as "base" | "lg") || "base"
+  const size = (options?.size as "base" | "sm" | "lg") || "base"
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -144,41 +119,34 @@ function DrawerCellRenderer({ value, options }: CellRendererProps) {
     }
   }, [])
 
-  const labelClass = size === "lg" ? "text-base" : "text-sm"
+  const gapClass = size === "sm" ? "gap-2" : size === "lg" ? "gap-4" : "gap-3"
 
   return (
     <div className="flex items-center w-full h-full">
-      <Drawer direction="right">
-        <DrawerTrigger asChild>
-          <Button variant="outline" size={size} noShift>
-            打开抽屉
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent size={size}>
-          <DrawerHeader size={size}>
-            <DrawerTitle size={size}>编辑资料</DrawerTitle>
-            <DrawerDescription size={size}>
-              在此修改您的个人资料，完成后点击保存。
-            </DrawerDescription>
-          </DrawerHeader>
-          <DrawerBody size={size}>
-            <DrawerField size={size}>
-              <label className={cn(labelClass, "font-medium text-black-85")}>姓名</label>
-              <Input size={size} defaultValue="张三" />
-            </DrawerField>
-            <DrawerField size={size}>
-              <label className={cn(labelClass, "font-medium text-black-85")}>用户名</label>
-              <Input size={size} defaultValue="@zhangsan" />
-            </DrawerField>
-          </DrawerBody>
-          <DrawerFooter size={size}>
-            <DrawerClose asChild>
-              <Button variant="outline" size={size} className="flex-1">取消</Button>
-            </DrawerClose>
-            <Button size={size} className="flex-1">保存</Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      <div className={cn("flex flex-col flex-1", gapClass)}>
+        <Checkbox
+          size={size}
+          checked={checked.opt1}
+          onChange={(v) => setChecked({ ...checked, opt1: v })}
+        >
+          <span className={cn(sizeTextClass[size], "whitespace-nowrap")}>选项一</span>
+        </Checkbox>
+        <Checkbox
+          size={size}
+          checked={checked.opt2}
+          onChange={(v) => setChecked({ ...checked, opt2: v })}
+        >
+          <span className={cn(sizeTextClass[size], "whitespace-nowrap")}>选项二</span>
+        </Checkbox>
+        <Checkbox
+          size={size}
+          checked={checked.opt3}
+          disabled
+          onChange={(v) => setChecked({ ...checked, opt3: v })}
+        >
+          <span className={cn(sizeTextClass[size], "whitespace-nowrap")}>选项三</span>
+        </Checkbox>
+      </div>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -208,17 +176,17 @@ interface SlotConfig {
 }
 
 const slotConfigs: SlotConfig[] = [
-  { name: "dialog", renderer: "dialogCell", props: {} },
-  { name: "drawer", renderer: "drawerCell", props: {} },
+  { name: "horizontal", renderer: "checkboxHorizontalGroup", props: {} },
+  { name: "vertical", renderer: "checkboxVerticalGroup", props: {} },
 ]
 
-const sizeConfigs = ["base", "lg"] as const
+const sizeConfigs = ["base", "sm", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "dialog", type: "dialogCell" as const, title: "弹窗 Dialog", width: 200 },
-    { id: "drawer", type: "drawerCell" as const, title: "抽屉 Drawer", width: 200 },
+    { id: "horizontal", type: "checkboxHorizontalGroup" as const, title: "横向组合", width: 350 },
+    { id: "vertical", type: "checkboxVerticalGroup" as const, title: "纵向组合", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -230,7 +198,7 @@ function generateTableData(): TableData {
         ...slotConfigs.map((slot) => ({
           id: `c-${slot.name}-${size}`,
           value: ontoName(slot.name, size),
-          type: slot.renderer as "dialogCell" | "drawerCell",
+          type: slot.renderer as "checkboxHorizontalGroup" | "checkboxVerticalGroup",
           options: {
             size,
             ...slot.props,
@@ -247,20 +215,20 @@ function generateTableData(): TableData {
 // 页面组件
 // ============================================
 
-export function DialogPage() {
+export function CheckboxPage() {
   const tableData = React.useMemo(() => generateTableData(), [])
 
   const cellRenderers = React.useMemo(
     () => ({
-      dialogCell: DialogCellRenderer,
-      drawerCell: DrawerCellRenderer,
+      checkboxHorizontalGroup: CheckboxHorizontalGroupRenderer,
+      checkboxVerticalGroup: CheckboxVerticalGroupRenderer,
     }),
     []
   )
 
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
-      <SectionTitle title="浮层 Floating" />
+      <SectionTitle title="多选 Checkbox" />
       <DemoTableWrapper>
         <DataTable
           data={tableData}
