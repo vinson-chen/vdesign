@@ -61,16 +61,16 @@ function PopoverBasicRenderer({ value, options }: CellRendererProps) {
 
   return (
     <div className="flex items-center w-full h-full">
-      <Popover>
+      <Popover size={size}>
         <PopoverTrigger asChild>
           <Button variant="outline" size={size} noShift>
             打开菜单
           </Button>
         </PopoverTrigger>
-        <PopoverContent size={size}>
-          <PopoverMenuItem size={size} closeOnClick>选项一</PopoverMenuItem>
-          <PopoverMenuItem size={size} closeOnClick>选项二</PopoverMenuItem>
-          <PopoverMenuItem size={size} closeOnClick>选项三</PopoverMenuItem>
+        <PopoverContent>
+          <PopoverMenuItem closeOnClick>选项一</PopoverMenuItem>
+          <PopoverMenuItem closeOnClick>选项二</PopoverMenuItem>
+          <PopoverMenuItem closeOnClick>选项三</PopoverMenuItem>
         </PopoverContent>
       </Popover>
       <Tooltip>
@@ -83,7 +83,7 @@ function PopoverBasicRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>
@@ -98,8 +98,6 @@ function PopoverIconRenderer({ value, options }: CellRendererProps) {
 
   const copyText = String(value)
   const size = (options?.size as "base" | "sm" | "lg") || "base"
-  const iconSize = size === "sm" ? "size-[14px]" : size === "lg" ? "size-[18px]" : "size-4"
-  const gapClass = size === "sm" ? "gap-1" : "gap-2"
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -115,25 +113,27 @@ function PopoverIconRenderer({ value, options }: CellRendererProps) {
     }
   }, [])
 
+  const widthClass = size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"
+
   return (
     <div className="flex items-center w-full h-full">
-      <Popover>
+      <Popover size={size}>
         <PopoverTrigger asChild>
           <Button variant="outline" size={size} rightIcon="icon-chevron-down" noShift>
             更多操作
           </Button>
         </PopoverTrigger>
-        <PopoverContent size={size} className={size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"}>
-          <PopoverMenuItem size={size} closeOnClick className={gapClass}>
-            <svg className={iconSize} style={{ fill: "currentColor" }}><use xlinkHref="#icon-edit" /></svg>
+        <PopoverContent className={widthClass}>
+          <PopoverMenuItem closeOnClick className="gap-2">
+            <svg className="size-4" style={{ fill: "currentColor" }}><use xlinkHref="#icon-edit" /></svg>
             编辑
           </PopoverMenuItem>
-          <PopoverMenuItem size={size} closeOnClick className={gapClass}>
-            <svg className={iconSize} style={{ fill: "currentColor" }}><use xlinkHref="#icon-copy" /></svg>
+          <PopoverMenuItem closeOnClick className="gap-2">
+            <svg className="size-4" style={{ fill: "currentColor" }}><use xlinkHref="#icon-copy" /></svg>
             复制
           </PopoverMenuItem>
-          <PopoverMenuItem size={size} closeOnClick className={gapClass}>
-            <svg className={iconSize} style={{ fill: "currentColor" }}><use xlinkHref="#icon-delete" /></svg>
+          <PopoverMenuItem closeOnClick className="gap-2">
+            <svg className="size-4" style={{ fill: "currentColor" }}><use xlinkHref="#icon-delete" /></svg>
             删除
           </PopoverMenuItem>
         </PopoverContent>
@@ -148,7 +148,7 @@ function PopoverIconRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>
@@ -164,6 +164,7 @@ function PopoverCheckboxRenderer({ value, options }: CellRendererProps) {
 
   const copyText = String(value)
   const size = (options?.size as "base" | "sm" | "lg") || "base"
+  const widthClass = size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -181,20 +182,20 @@ function PopoverCheckboxRenderer({ value, options }: CellRendererProps) {
 
   return (
     <div className="flex items-center w-full h-full">
-      <Popover>
+      <Popover size={size}>
         <PopoverTrigger asChild>
           <Button variant="outline" size={size} noShift>
             多选选项
           </Button>
         </PopoverTrigger>
-        <PopoverContent size={size} className={size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"}>
-          <PopoverCheckboxItem size={size} checked={checkboxItems.option1} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option1: c })}>
+        <PopoverContent className={widthClass}>
+          <PopoverCheckboxItem checked={checkboxItems.option1} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option1: c })}>
             显示名称
           </PopoverCheckboxItem>
-          <PopoverCheckboxItem size={size} checked={checkboxItems.option2} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option2: c })}>
+          <PopoverCheckboxItem checked={checkboxItems.option2} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option2: c })}>
             显示图标
           </PopoverCheckboxItem>
-          <PopoverCheckboxItem size={size} checked={checkboxItems.option3} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option3: c })}>
+          <PopoverCheckboxItem checked={checkboxItems.option3} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option3: c })}>
             显示描述
           </PopoverCheckboxItem>
         </PopoverContent>
@@ -209,7 +210,7 @@ function PopoverCheckboxRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>
@@ -225,6 +226,7 @@ function PopoverRadioRenderer({ value, options }: CellRendererProps) {
 
   const copyText = String(value)
   const size = (options?.size as "base" | "sm" | "lg") || "base"
+  const widthClass = size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -242,17 +244,17 @@ function PopoverRadioRenderer({ value, options }: CellRendererProps) {
 
   return (
     <div className="flex items-center w-full h-full">
-      <Popover>
+      <Popover size={size}>
         <PopoverTrigger asChild>
           <Button variant="outline" size={size} noShift>
             单选选项
           </Button>
         </PopoverTrigger>
-        <PopoverContent size={size} className={size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"}>
+        <PopoverContent className={widthClass}>
           <PopoverRadioGroup value={radioValue} onValueChange={setRadioValue}>
-            <PopoverRadioItem size={size} value="option1">选项一</PopoverRadioItem>
-            <PopoverRadioItem size={size} value="option2">选项二</PopoverRadioItem>
-            <PopoverRadioItem size={size} value="option3">选项三</PopoverRadioItem>
+            <PopoverRadioItem value="option1">选项一</PopoverRadioItem>
+            <PopoverRadioItem value="option2">选项二</PopoverRadioItem>
+            <PopoverRadioItem value="option3">选项三</PopoverRadioItem>
           </PopoverRadioGroup>
         </PopoverContent>
       </Popover>
@@ -266,7 +268,7 @@ function PopoverRadioRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>
@@ -282,6 +284,7 @@ function PopoverSubmenuRenderer({ value, options }: CellRendererProps) {
 
   const copyText = String(value)
   const size = (options?.size as "base" | "sm" | "lg") || "base"
+  const widthClass = size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"
   const editFields = [
     { label: "姓名", type: "input" as const, defaultValue: "张三", placeholder: "请输入姓名" },
     { label: "用户名", type: "input" as const, defaultValue: "@zhangsan", placeholder: "请输入用户名" },
@@ -302,35 +305,33 @@ function PopoverSubmenuRenderer({ value, options }: CellRendererProps) {
     }
   }, [])
 
-  const pxClass = size === "sm" ? "px-1.5" : size === "lg" ? "px-3" : "px-2"
-
   return (
     <div className="flex items-center w-full h-full">
-      <Popover onOpenChange={(open) => !open && setEditView(false)}>
+      <Popover size={size} onOpenChange={(open) => !open && setEditView(false)}>
         <PopoverTrigger asChild>
           <Button variant="outline" size={size} noShift>
             更多选项
           </Button>
         </PopoverTrigger>
-        <PopoverContent size={size} className={size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"}>
+        <PopoverContent className={widthClass}>
           <div className={editView ? "hidden" : ""}>
-            <PopoverMenuItem size={size} onClick={() => setEditView(true)}>
+            <PopoverMenuItem onClick={() => setEditView(true)}>
               选项一
             </PopoverMenuItem>
             <PopoverSub>
-              <PopoverSubTrigger size={size}>更多操作</PopoverSubTrigger>
-              <PopoverSubContent size={size}>
-                <PopoverMenuItem size={size} closeOnClick>保存</PopoverMenuItem>
-                <PopoverMenuItem size={size} closeOnClick>另存为</PopoverMenuItem>
+              <PopoverSubTrigger>更多操作</PopoverSubTrigger>
+              <PopoverSubContent>
+                <PopoverMenuItem closeOnClick>保存</PopoverMenuItem>
+                <PopoverMenuItem closeOnClick>另存为</PopoverMenuItem>
                 <PopoverSeparator />
-                <PopoverMenuItem size={size} closeOnClick>导出</PopoverMenuItem>
+                <PopoverMenuItem closeOnClick>导出</PopoverMenuItem>
               </PopoverSubContent>
             </PopoverSub>
           </div>
           <div className={editView ? "" : "hidden"}>
-            <PopoverEditContent size={size} fields={editFields} />
+            <PopoverEditContent fields={editFields} />
             <PopoverSeparator />
-            <div className={cn("flex gap-2 py-1.5", pxClass)}>
+            <div className="flex gap-2 py-1.5 px-2">
               <Button variant="outline" size={size} className="flex-1">取消</Button>
               <Button variant="primary" size={size} className="flex-1">保存</Button>
             </div>
@@ -347,7 +348,7 @@ function PopoverSubmenuRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>
@@ -364,6 +365,7 @@ function PopoverCombinedRenderer({ value, options }: CellRendererProps) {
 
   const copyText = String(value)
   const size = (options?.size as "base" | "sm" | "lg") || "base"
+  const widthClass = size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -381,26 +383,26 @@ function PopoverCombinedRenderer({ value, options }: CellRendererProps) {
 
   return (
     <div className="flex items-center w-full h-full">
-      <Popover>
+      <Popover size={size}>
         <PopoverTrigger asChild>
           <Button variant="outline" size={size} rightIcon="icon-chevron-down" noShift>
             设置
           </Button>
         </PopoverTrigger>
-        <PopoverContent size={size} className={size === "sm" ? "w-[140px]" : size === "lg" ? "w-[180px]" : "w-[160px]"}>
-          <PopoverLabel size={size}>显示设置</PopoverLabel>
-          <PopoverCheckboxItem size={size} checked={checkboxItems.option1} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option1: c })}>
+        <PopoverContent className={widthClass}>
+          <PopoverLabel>显示设置</PopoverLabel>
+          <PopoverCheckboxItem checked={checkboxItems.option1} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option1: c })}>
             显示工具栏
           </PopoverCheckboxItem>
-          <PopoverCheckboxItem size={size} checked={checkboxItems.option2} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option2: c })}>
+          <PopoverCheckboxItem checked={checkboxItems.option2} onCheckedChange={(c: boolean) => setCheckboxItems({ ...checkboxItems, option2: c })}>
             显示状态栏
           </PopoverCheckboxItem>
           <PopoverSeparator />
-          <PopoverLabel size={size}>主题</PopoverLabel>
+          <PopoverLabel>主题</PopoverLabel>
           <PopoverRadioGroup value={radioValue} onValueChange={setRadioValue}>
-            <PopoverRadioItem size={size} value="option1">浅色</PopoverRadioItem>
-            <PopoverRadioItem size={size} value="option2">深色</PopoverRadioItem>
-            <PopoverRadioItem size={size} value="option3">跟随系统</PopoverRadioItem>
+            <PopoverRadioItem value="option1">浅色</PopoverRadioItem>
+            <PopoverRadioItem value="option2">深色</PopoverRadioItem>
+            <PopoverRadioItem value="option3">跟随系统</PopoverRadioItem>
           </PopoverRadioGroup>
         </PopoverContent>
       </Popover>
@@ -414,7 +416,7 @@ function PopoverCombinedRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>
@@ -429,6 +431,7 @@ function PopoverEditRenderer({ value, options }: CellRendererProps) {
 
   const copyText = String(value)
   const size = (options?.size as "base" | "sm" | "lg") || "base"
+  const widthClass = size === "sm" ? "w-[180px]" : size === "lg" ? "w-[220px]" : "w-[200px]"
   const editFields = [
     { label: "姓名", type: "input" as const, defaultValue: "张三", placeholder: "请输入姓名" },
     { label: "用户名", type: "input" as const, defaultValue: "@zhangsan", placeholder: "请输入用户名" },
@@ -449,20 +452,18 @@ function PopoverEditRenderer({ value, options }: CellRendererProps) {
     }
   }, [])
 
-  const pxClass = size === "sm" ? "px-1.5" : size === "lg" ? "px-3" : "px-2"
-
   return (
     <div className="flex items-center w-full h-full">
-      <Popover>
+      <Popover size={size}>
         <PopoverTrigger asChild>
           <Button variant="outline" size={size} rightIcon="icon-chevron-down" noShift>
             编辑资料
           </Button>
         </PopoverTrigger>
-        <PopoverContent size={size} className={size === "sm" ? "w-[180px]" : size === "lg" ? "w-[220px]" : "w-[200px]"}>
-          <PopoverEditContent size={size} fields={editFields} />
+        <PopoverContent className={widthClass}>
+          <PopoverEditContent fields={editFields} />
           <PopoverSeparator />
-          <div className={cn("flex gap-2 py-1.5", pxClass)}>
+          <div className="flex gap-2 py-1.5 px-2">
             <Button variant="outline" size={size} className="flex-1">取消</Button>
             <Button variant="primary" size={size} className="flex-1">保存</Button>
           </div>
@@ -478,7 +479,7 @@ function PopoverEditRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>

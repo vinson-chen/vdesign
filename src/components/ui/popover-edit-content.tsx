@@ -1,5 +1,5 @@
 import * as React from "react"
-import { PopoverLabel } from "./popover"
+import { PopoverLabel, PopoverContext } from "./popover"
 import { Input } from "./input"
 import { Button } from "./button"
 import {
@@ -28,16 +28,20 @@ interface EditField {
 }
 
 interface PopoverEditContentProps {
-  size?: "base" | "sm" | "lg"
+  size?: "base" | "sm" | "lg"  // 可选，默认从 Context 获取
   fields: EditField[]
 }
 
-function PopoverEditContent({ size = "base", fields }: PopoverEditContentProps) {
+function PopoverEditContent({ size, fields }: PopoverEditContentProps) {
+  // 从 PopoverContext 获取 size（如果未通过 prop 传递）
+  const context = React.useContext(PopoverContext)
+  const actualSize = size ?? context.size
+
   const paddingClass = {
     sm: "px-1.5 pb-1.5",
     base: "px-2 pb-1.5",
     lg: "px-3 pb-1.5",
-  }[size]
+  }[actualSize]
 
   const autoSelectedRef = React.useRef<Set<number>>(new Set())
 
@@ -45,12 +49,12 @@ function PopoverEditContent({ size = "base", fields }: PopoverEditContentProps) 
     <>
       {fields.map((field, index) => (
         <React.Fragment key={index}>
-          {field.label && <PopoverLabel size={size}>{field.label}</PopoverLabel>}
+          {field.label && <PopoverLabel>{field.label}</PopoverLabel>}
           {field.type === "input" && (
             <div className={paddingClass}>
               <Input
                 variant="basic"
-                size={size}
+                size={actualSize}
                 value={field.value}
                 defaultValue={field.defaultValue}
                 onChange={(e) => field.onChange?.(e.target.value)}
@@ -68,8 +72,8 @@ function PopoverEditContent({ size = "base", fields }: PopoverEditContentProps) 
           )}
           {field.type === "select" && (
             <div className={paddingClass}>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger variant="basic" size={size} className="w-full">
+              <Select value={field.value} onValueChange={field.onChange} size={actualSize}>
+                <SelectTrigger variant="basic" className="w-full">
                   <SelectValue placeholder={field.placeholder} />
                 </SelectTrigger>
                 <SelectContent>
@@ -86,7 +90,7 @@ function PopoverEditContent({ size = "base", fields }: PopoverEditContentProps) 
             <ContentField
               field={field}
               paddingClass={paddingClass}
-              size={size}
+              size={actualSize}
             />
           )}
         </React.Fragment>

@@ -160,7 +160,7 @@ export function InputPage() {
 
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
-      <SectionTitle title="输入 input" />
+      <SectionTitle title="输入 Input" />
       <DemoTableWrapper>
         <DataTable
           data={tableData}

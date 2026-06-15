@@ -10,6 +10,48 @@ import {
   SelectItem,
 } from "./select"
 import { SelectEditable } from "./select-editable"
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
+
+// 截断文本组件：检测文本是否被截断，若截断则悬停显示 Tooltip
+function TruncatedText({ children, className, onDoubleClick }: { children: string; className?: string; onDoubleClick?: () => void }) {
+  const textRef = React.useRef<HTMLSpanElement>(null)
+  const [isTruncated, setIsTruncated] = React.useState(false)
+
+  React.useEffect(() => {
+    if (textRef.current) {
+      setIsTruncated(textRef.current.scrollWidth > textRef.current.clientWidth)
+    }
+  }, [children])
+
+  if (isTruncated) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            ref={textRef}
+            className={className}
+            onDoubleClick={onDoubleClick}
+          >
+            {children}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" size="base">
+          <p>{children}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <span
+      ref={textRef}
+      className={className}
+      onDoubleClick={onDoubleClick}
+    >
+      {children}
+    </span>
+  )
+}
 
 // 文本单元格渲染器
 function TextCellRenderer({ value, cellId, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly }: CellRendererProps) {
@@ -33,28 +75,38 @@ function TextCellRenderer({ value, cellId, isEditing, onStartEdit, editingValue,
   }
 
   return (
-    <span
+    <TruncatedText
       className="flex-1 w-full min-h-6 cursor-pointer truncate"
       onDoubleClick={readOnly ? undefined : () => onStartEdit?.()}
     >
       {String(value) || " "}
-    </span>
+    </TruncatedText>
   )
 }
 
 // 输入框单元格渲染器
-function InputCellRenderer({ value, options, onChange }: CellRendererProps) {
+function InputCellRenderer({ value, options, onChange, cellId, isCellHovering }: CellRendererProps) {
   const [localValue, setLocalValue] = React.useState(String(value))
   const placeholder = (options?.placeholder as string) || "请输入"
+  const inputRef = React.useRef<HTMLInputElement>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalValue(e.target.value)
     onChange?.(e.target.value)
   }
 
+  // 当单元格被锁定且用户按键时，外部会调用 inputRef.current.focus()
+  // 这里我们暴露一个方法让外部能聚焦到 input
+  React.useEffect(() => {
+    if (isCellHovering && inputRef.current) {
+      // 可以在这里添加额外的聚焦逻辑
+    }
+  }, [isCellHovering])
+
   return (
-    <div className="min-w-0 flex-1">
+    <div className="min-w-0 flex-1" data-input-cell={cellId}>
       <Input
+        ref={inputRef}
         className="w-full"
         placeholder={placeholder}
         variant="basic"

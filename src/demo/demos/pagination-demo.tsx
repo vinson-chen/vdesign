@@ -55,9 +55,9 @@ function PaginationCompactRenderer({ value, options }: CellRendererProps) {
   return (
     <div className="flex items-center w-full h-full">
       <Pagination size={size}>
-        <PaginationPrevious size={size} disabled={page === 1} onClick={() => setPage(page - 1)} />
-        <PaginationInfo size={size} page={page} totalPages={totalPages} onPageChange={setPage} />
-        <PaginationNext size={size} disabled={page === totalPages} onClick={() => setPage(page + 1)} />
+        <PaginationPrevious disabled={page === 1} onClick={() => setPage(page - 1)} />
+        <PaginationInfo page={page} totalPages={totalPages} onPageChange={setPage} />
+        <PaginationNext disabled={page === totalPages} onClick={() => setPage(page + 1)} />
       </Pagination>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -69,7 +69,7 @@ function PaginationCompactRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>

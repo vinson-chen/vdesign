@@ -1,13 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
 import { SectionTitle, DemoTableWrapper } from "./shared"
@@ -17,9 +11,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 // 本体论命名工具
 // ============================================
 
-function ontoName(variant: string, size: string): string {
-  const sizeParts = size.replace(/([A-Z])/g, "-$1").toLowerCase().split("-").filter(Boolean)
-  return ["select", variant, ...sizeParts].join("-")
+function ontoName(slot: string, size: string): string {
+  return ["tabs", slot, size].join("-")
 }
 
 function getDisplaySize(size: string): string {
@@ -27,24 +20,16 @@ function getDisplaySize(size: string): string {
 }
 
 // ============================================
-// 自定义单元格渲染器：选择框，默认显示复制按钮
+// 自定义单元格渲染器
 // ============================================
 
-const selectOptions = [
-  { value: "option1", label: "选项一" },
-  { value: "option2", label: "选项二" },
-  { value: "option3", label: "选项三" },
-]
-
-function SelectCellRenderer({ value, options }: CellRendererProps) {
+// 基础 Tabs 渲染器
+function TabsBasicRenderer({ value, options }: CellRendererProps) {
   const [copied, setCopied] = React.useState(false)
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const copyText = String(value)
-  const variant = (options?.variant as "basic" | "invalid" | "disabled") || "basic"
   const size = (options?.size as "base" | "sm" | "lg") || "base"
-  const leftIcon = (options?.leftIcon as string) || undefined
-  const isDisabled = variant === "disabled"
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -62,18 +47,68 @@ function SelectCellRenderer({ value, options }: CellRendererProps) {
 
   return (
     <div className="flex items-center w-full h-full">
-      <Select variant={isDisabled ? "disabled" : undefined} size={size}>
-        <SelectTrigger variant={variant} leftIcon={leftIcon} className="flex-1 min-w-0">
-          <SelectValue placeholder="请选择" />
-        </SelectTrigger>
-        <SelectContent>
-          {selectOptions.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Tabs defaultValue="tab1" size={size}>
+        <TabsList>
+          <TabsTrigger value="tab1">选项一</TabsTrigger>
+          <TabsTrigger value="tab2">选项二</TabsTrigger>
+          <TabsTrigger value="tab3">选项三</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tab1">内容一</TabsContent>
+        <TabsContent value="tab2">内容二</TabsContent>
+        <TabsContent value="tab3">内容三</TabsContent>
+      </Tabs>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="iconSm"
+            leftIcon={copied ? "icon-check" : "icon-copy"}
+            onClick={handleCopy}
+            className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
+          />
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p>{copyText}</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
+
+// 线型 Tabs 渲染器
+function TabsLineRenderer({ value, options }: CellRendererProps) {
+  const [copied, setCopied] = React.useState(false)
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const copyText = String(value)
+  const size = (options?.size as "base" | "sm" | "lg") || "base"
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(copyText)
+    setCopied(true)
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => setCopied(false), 1500)
+  }
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
+
+  return (
+    <div className="flex items-center w-full h-full">
+      <Tabs defaultValue="tab1" size={size}>
+        <TabsList variant="line">
+          <TabsTrigger variant="line" value="tab1">选项一</TabsTrigger>
+          <TabsTrigger variant="line" value="tab2">选项二</TabsTrigger>
+          <TabsTrigger variant="line" value="tab3">选项三</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tab1">内容一</TabsContent>
+        <TabsContent value="tab2">内容二</TabsContent>
+        <TabsContent value="tab3">内容三</TabsContent>
+      </Tabs>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -98,26 +133,22 @@ function SelectCellRenderer({ value, options }: CellRendererProps) {
 
 interface SlotConfig {
   name: string
+  renderer: string
   props: Record<string, unknown>
 }
 
 const slotConfigs: SlotConfig[] = [
-  { name: "basic", props: {} },
-  { name: "iconLeft", props: { variant: "basic", leftIcon: "icon-user" } },
-  { name: "invalid", props: {} },
-  { name: "disabled", props: {} },
+  { name: "basic", renderer: "tabsBasic", props: {} },
+  { name: "line", renderer: "tabsLine", props: {} },
 ]
 
 const sizeConfigs = ["base", "sm", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
-    { id: "checkbox", type: "checkbox" as const, width: 200 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "basic", type: "select" as const, title: "basic", width: 200 },
-    { id: "iconLeft", type: "select" as const, title: "iconLeft", width: 200 },
-    { id: "invalid", type: "select" as const, title: "invalid", width: 200 },
-    { id: "disabled", type: "select" as const, title: "disabled", width: 200 },
+    { id: "basic", type: "tabsBasic" as const, title: "基础", width: 300 },
+    { id: "line", type: "tabsLine" as const, title: "线型", width: 300 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -125,14 +156,12 @@ function generateTableData(): TableData {
     return {
       id: `row-${size}`,
       cells: [
-        { id: `cb-${size}`, value: false },
         { id: `c-size-${size}`, value: displaySize },
         ...slotConfigs.map((slot) => ({
           id: `c-${slot.name}-${size}`,
           value: ontoName(slot.name, size),
-          type: "select" as const,
+          type: slot.renderer as "tabsBasic" | "tabsLine",
           options: {
-            variant: slot.name as "basic" | "invalid" | "disabled",
             size,
             ...slot.props,
           },
@@ -141,27 +170,27 @@ function generateTableData(): TableData {
     }
   })
 
-  // 初始隐藏多选列，按"尺寸"分组
-  return { columns, rows, hiddenColumns: new Set(["checkbox"]), groupColumnId: "size" }
+  return { columns, rows, groupColumnId: "size" }
 }
 
 // ============================================
 // 页面组件
 // ============================================
 
-export function SelectPage() {
+export function TabsPage() {
   const tableData = React.useMemo(() => generateTableData(), [])
 
   const cellRenderers = React.useMemo(
     () => ({
-      select: SelectCellRenderer,
+      tabsBasic: TabsBasicRenderer,
+      tabsLine: TabsLineRenderer,
     }),
     []
   )
 
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
-      <SectionTitle title="选择 Select" />
+      <SectionTitle title="切换 Tabs" />
       <DemoTableWrapper>
         <DataTable
           data={tableData}

@@ -19,6 +19,7 @@ import { HeaderCellEditView } from "./header-cell-edit"
 import { HeaderCellHideManagerView } from "./header-cell-hide-manager"
 import { HeaderCellDimensionView } from "./header-cell-dimension"
 import { defaultCellRenderers, TextCellRenderer } from "./cell-renderers"
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
 
 const tableVariants = cva("flex flex-col relative", {
   variants: {
@@ -31,6 +32,47 @@ const tableVariants = cva("flex flex-col relative", {
     variant: "base",
   },
 })
+
+// 截断文本组件：检测文本是否被截断，若截断则悬停显示 Tooltip
+function TruncatedText({ children, className, onDoubleClick }: { children: string; className?: string; onDoubleClick?: () => void }) {
+  const textRef = React.useRef<HTMLSpanElement>(null)
+  const [isTruncated, setIsTruncated] = React.useState(false)
+
+  React.useEffect(() => {
+    if (textRef.current) {
+      setIsTruncated(textRef.current.scrollWidth > textRef.current.clientWidth)
+    }
+  }, [children])
+
+  if (isTruncated) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            ref={textRef}
+            className={className}
+            onDoubleClick={onDoubleClick}
+          >
+            {children}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" size="base">
+          <p>{children}</p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <span
+      ref={textRef}
+      className={className}
+      onDoubleClick={onDoubleClick}
+    >
+      {children}
+    </span>
+  )
+}
 
 interface CellContentProps {
   cellId: string
@@ -68,12 +110,12 @@ function HeaderTextCellInner({ cellId, value, columnId, currentColumnType, editV
 
   return (
     <>
-      <span
+      <TruncatedText
         className="truncate cursor-pointer flex-1"
         onDoubleClick={state.readOnly ? undefined : onDoubleClickTitle}
       >
         {String(value)}
-      </span>
+      </TruncatedText>
       {!state.readOnly && (
         <PopoverTrigger asChild>
           <Button
@@ -367,6 +409,7 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
         return (
           <Cell
             key={cell.id}
+            data-cell-id={!isHeader ? cell.id : undefined}
             width={cellWidth}
             variant={cellVariant}
             isLastCell={false}
@@ -534,7 +577,7 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
                   autoFocus
                 />
               ) : (
-                <span
+                <TruncatedText
                   className={cn(
                     "text-sm cursor-pointer truncate",
                     groupValue ? "font-medium text-black-85" : "font-normal text-black-25"
@@ -542,7 +585,7 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
                   onDoubleClick={state.readOnly ? undefined : () => actions.startEdit(cellId, groupValue)}
                 >
                   {groupValue || "空值组"}
-                </span>
+                </TruncatedText>
               )}
               {!isEditing && (
                 <Button
@@ -1120,13 +1163,57 @@ function DataTableInner({
     if (!state.lockedCellId) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 编辑态：Enter 保存并下移，Escape 取消编辑
+      // 检查焦点是否在可交互元素上（输入框、选择框等）
+      const activeElement = document.activeElement as HTMLElement
+      const isInteractiveElement = activeElement.closest('input, select, textarea, [data-slot="select-trigger"], [data-slot="select-editable"]')
+
+      // 如果焦点在可交互元素上，不处理键盘快捷键（除了 Escape 和 Enter）
+      if (isInteractiveElement && e.key !== 'Escape' && e.key !== 'Enter') {
+        return
+      }
+
+      // 输入列单元格：焦点在 Input 上时，Enter → 保存并下移/退出
+      if (isInteractiveElement && e.key === 'Enter') {
+        const cellType = getLockedCellType()
+        if (cellType === 'input') {
+          if (e.preventDefault) e.preventDefault()
+          // 失焦保存
+          if ((activeElement as HTMLInputElement).blur) {
+            (activeElement as HTMLInputElement).blur()
+          }
+          // 检查是否是最后一行
+          const allRows = state.groupColumnId
+            ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
+            : data.rows
+          const pos = getLockedCellPosition()
+          if (pos && pos.rowIndex === allRows.length - 1) {
+            // 最后一行 → 退出锁定态
+            actions.lockCell(null)
+          } else {
+            // 非最后一行 → 移动到下一行
+            navigateLockedCell('ArrowDown')
+          }
+          return
+        }
+      }
+
+      // 编辑态：Enter 保存并下移/退出，Escape 取消编辑
       if (state.editingCellId) {
         if (e.key === 'Enter') {
           e.preventDefault()
           actions.finishEdit()
-          // 保存后移动到下一行同列单元格
-          navigateLockedCell('ArrowDown')
+          // 检查是否是最后一行
+          const allRows = state.groupColumnId
+            ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
+            : data.rows
+          const pos = getLockedCellPosition()
+          if (pos && pos.rowIndex === allRows.length - 1) {
+            // 最后一行 → 退出锁定态
+            actions.lockCell(null)
+          } else {
+            // 非最后一行 → 移动到下一行同列单元格
+            navigateLockedCell('ArrowDown')
+          }
           return
         }
         if (e.key === 'Escape') {
@@ -1158,9 +1245,37 @@ function DataTableInner({
         return
       }
 
+      // 获取锁定单元格类型
+      const cellType = getLockedCellType()
+
+      // 输入列单元格：Enter 或可打印字符 → 聚焦内部 Input
+      if (cellType === 'input' && !state.readOnly) {
+        if (e.key === 'Enter' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey)) {
+          e.preventDefault()
+          // 查找锁定单元格内的 Input 元素并聚焦
+          const lockedCellElement = document.querySelector(`[data-cell-id="${state.lockedCellId}"]`)
+          if (lockedCellElement) {
+            const inputElement = lockedCellElement.querySelector('input') as HTMLInputElement
+            if (inputElement) {
+              inputElement.focus()
+              // 如果是可打印字符（非 Enter），延迟设置值（等待 focus 生效）
+              if (e.key.length === 1 && e.key !== 'Enter') {
+                setTimeout(() => {
+                  // 设置原生值
+                  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+                  nativeInputValueSetter.call(inputElement, e.key)
+                  // 触发 React 的 onChange
+                  inputElement.dispatchEvent(new Event('input', { bubbles: true }))
+                }, 0)
+              }
+            }
+          }
+          return
+        }
+      }
+
       // Enter → 进入编辑态（文本单元格）— readOnly 模式下禁用
       if (e.key === 'Enter' && !state.readOnly) {
-        const cellType = getLockedCellType()
         if (cellType === 'text' || cellType === 'editable') {
           const currentValue = getLockedCellValue()
           actions.startEdit(state.lockedCellId!, currentValue)
@@ -1170,7 +1285,6 @@ function DataTableInner({
 
       // 可打印字符 → 进入编辑态（以该字符为初始值）— readOnly 模式下禁用
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !state.readOnly) {
-        const cellType = getLockedCellType()
         if (cellType === 'text' || cellType === 'editable') {
           actions.startEdit(state.lockedCellId!, e.key)
         }
@@ -1179,7 +1293,6 @@ function DataTableInner({
 
       // Backspace/Delete → 进入编辑态（清空内容）— readOnly 模式下禁用
       if ((e.key === 'Backspace' || e.key === 'Delete') && !state.readOnly) {
-        const cellType = getLockedCellType()
         if (cellType === 'text' || cellType === 'editable') {
           actions.startEdit(state.lockedCellId!, '')
         }

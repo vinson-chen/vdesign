@@ -1,7 +1,7 @@
 import { DataTable } from "@/components/ui/data-table"
 import { SectionTitle, DemoTableWrapper } from "./shared"
 
-// 维思 Vcell 表格页面组件
+// 表格 table 页面组件
 function TablePage() {
   // 生成表格数据：1行2列数据列（checkbox + 列1 + 列2）
   const tableData = {
@@ -21,7 +21,7 @@ function TablePage() {
 
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
-      <SectionTitle title="维思 Vcell" />
+      <SectionTitle title="表格 Table" />
       <DemoTableWrapper>
         <DataTable data={tableData} variant="plain" />
       </DemoTableWrapper>

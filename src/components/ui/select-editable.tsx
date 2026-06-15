@@ -2,8 +2,8 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Input } from "./input"
-import { Popover, PopoverTrigger, PopoverContent, PopoverSeparator } from "./popover"
-import { selectTriggerVariants, selectContentVariants, selectItemVariants } from "./select"
+import { Popover, PopoverTrigger, PopoverContent, PopoverSeparator, PopoverItem, sizeConfig } from "./popover"
+import { selectTriggerVariants } from "./select"
 
 // 选项项类型
 interface SelectEditableItem {
@@ -37,7 +37,7 @@ function SelectEditable({
   const [searchKeyword, setSearchKeyword] = React.useState("")
   const [open, setOpen] = React.useState(false)
 
-  const iconSize = size === "sm" ? "size-[14px]" : size === "lg" ? "size-[18px]" : "size-4"
+  const config = sizeConfig[size]
 
   // 获取当前选中项的 label
   const selectedLabel = React.useMemo(() => {
@@ -85,6 +85,7 @@ function SelectEditable({
 
   return (
     <Popover
+      size={size}
       open={open}
       onOpenChange={(newOpen) => {
         // 打开面板时清空搜索
@@ -95,24 +96,23 @@ function SelectEditable({
       <PopoverTrigger asChild>
         <button
           data-slot="select-editable-trigger"
-          className={cn(selectTriggerVariants({ variant, size }), "w-full", className)}
+          className={cn(selectTriggerVariants({ variant }), config.height, config.rounded, config.px, config.gap, config.text, "w-full", className)}
           disabled={isDisabled}
           type="button"
         >
           <div className={cn("flex-1 truncate text-left", !selectedLabel && "text-black-25")}>
             {selectedLabel || placeholder}
           </div>
-          <svg aria-hidden="true" className={cn("shrink-0", iconSize)} style={{ fill: "currentColor" }}>
+          <svg aria-hidden="true" className={cn("shrink-0 ml-auto", config.icon)} style={{ fill: "currentColor" }}>
             <use xlinkHref="#icon-chevron-down" />
           </svg>
         </button>
       </PopoverTrigger>
 
       <PopoverContent
-        size={size}
         align="start"
         sideOffset={4}
-        className={cn(selectContentVariants({ size }), "min-w-[184px] w-[var(--radix-popover-trigger-width)]")}
+        className="min-w-[184px] w-[var(--radix-popover-trigger-width)]"
       >
         {/* 搜索区 */}
         <Input
@@ -136,24 +136,29 @@ function SelectEditable({
         <div className="flex flex-col group/options">
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
-              <button
+              <PopoverItem
                 key={item.value}
-                type="button"
                 disabled={item.disabled}
                 className={cn(
-                  selectItemVariants({ size }),
                   item.value === value && "bg-neutral-1 group-hover/options:bg-transparent hover:bg-neutral-1",
-                  item.disabled && "cursor-not-allowed opacity-50"
+                  item.disabled && "opacity-50"
                 )}
                 onClick={() => !item.disabled && handleSelectItem(item.value)}
               >
                 {item.label}
-              </button>
+              </PopoverItem>
             ))
           ) : (
             // 没有选项时显示占位文案
             !searchKeyword.trim() && items.length === 0 ? (
-              <span className={cn(selectItemVariants({ size }), "text-black-55 cursor-default")}>
+              <span className={cn(
+                "relative flex items-center outline-none transition-colors",
+                config.height,
+                config.rounded,
+                config.px,
+                config.text,
+                "text-black-55 cursor-default"
+              )}>
                 没有选项
               </span>
             ) : null
@@ -161,16 +166,12 @@ function SelectEditable({
 
           {/* 添加选项按钮：搜索框有内容且无精确匹配时显示 */}
           {searchKeyword.trim() && !hasExactMatch && (
-            <button
-              type="button"
-              className={cn(
-                selectItemVariants({ size }),
-                "text-black-55 hover:text-black-85"
-              )}
+            <PopoverItem
+              className="text-black-55 hover:text-black-85"
               onClick={handleAddOption}
             >
               添加选项 "{searchKeyword.trim()}"
-            </button>
+            </PopoverItem>
           )}
         </div>
       </PopoverContent>

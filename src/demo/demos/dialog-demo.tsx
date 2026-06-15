@@ -69,8 +69,6 @@ function DialogCellRenderer({ value, options }: CellRendererProps) {
     }
   }, [])
 
-  const labelClass = size === "lg" ? "text-base" : "text-sm"
-
   return (
     <div className="flex items-center w-full h-full">
       <Dialog>
@@ -80,23 +78,23 @@ function DialogCellRenderer({ value, options }: CellRendererProps) {
           </Button>
         </DialogTrigger>
         <DialogContent size={size}>
-          <DialogHeader size={size}>
-            <DialogTitle size={size}>编辑资料</DialogTitle>
-            <DialogDescription size={size}>
+          <DialogHeader>
+            <DialogTitle>编辑资料</DialogTitle>
+            <DialogDescription>
               在此修改您的个人资料，完成后点击保存。
             </DialogDescription>
           </DialogHeader>
-          <DialogBody size={size}>
-            <DialogField size={size}>
-              <label className={cn(labelClass, "font-medium text-black-85")}>姓名</label>
-              <Input size={size} defaultValue="张三" />
+          <DialogBody>
+            <DialogField>
+              <label className="font-medium text-black-85">姓名</label>
+              <Input defaultValue="张三" size={size} />
             </DialogField>
-            <DialogField size={size}>
-              <label className={cn(labelClass, "font-medium text-black-85")}>用户名</label>
-              <Input size={size} defaultValue="@zhangsan" />
+            <DialogField>
+              <label className="font-medium text-black-85">用户名</label>
+              <Input defaultValue="@zhangsan" size={size} />
             </DialogField>
           </DialogBody>
-          <DialogFooter size={size}>
+          <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" size={size}>取消</Button>
             </DialogClose>
@@ -114,7 +112,7 @@ function DialogCellRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>
@@ -144,8 +142,6 @@ function DrawerCellRenderer({ value, options }: CellRendererProps) {
     }
   }, [])
 
-  const labelClass = size === "lg" ? "text-base" : "text-sm"
-
   return (
     <div className="flex items-center w-full h-full">
       <Drawer direction="right">
@@ -155,23 +151,23 @@ function DrawerCellRenderer({ value, options }: CellRendererProps) {
           </Button>
         </DrawerTrigger>
         <DrawerContent size={size}>
-          <DrawerHeader size={size}>
-            <DrawerTitle size={size}>编辑资料</DrawerTitle>
-            <DrawerDescription size={size}>
+          <DrawerHeader>
+            <DrawerTitle>编辑资料</DrawerTitle>
+            <DrawerDescription>
               在此修改您的个人资料，完成后点击保存。
             </DrawerDescription>
           </DrawerHeader>
-          <DrawerBody size={size}>
-            <DrawerField size={size}>
-              <label className={cn(labelClass, "font-medium text-black-85")}>姓名</label>
-              <Input size={size} defaultValue="张三" />
+          <DrawerBody>
+            <DrawerField>
+              <label className="font-medium text-black-85">姓名</label>
+              <Input defaultValue="张三" size={size} />
             </DrawerField>
-            <DrawerField size={size}>
-              <label className={cn(labelClass, "font-medium text-black-85")}>用户名</label>
-              <Input size={size} defaultValue="@zhangsan" />
+            <DrawerField>
+              <label className="font-medium text-black-85">用户名</label>
+              <Input defaultValue="@zhangsan" size={size} />
             </DrawerField>
           </DrawerBody>
-          <DrawerFooter size={size}>
+          <DrawerFooter>
             <DrawerClose asChild>
               <Button variant="outline" size={size} className="flex-1">取消</Button>
             </DrawerClose>
@@ -189,7 +185,7 @@ function DrawerCellRenderer({ value, options }: CellRendererProps) {
             className={cn("ml-auto", copied ? "text-success-5" : "text-black-55")}
           />
         </TooltipTrigger>
-        <TooltipContent side="top" size="base">
+        <TooltipContent side="top">
           <p>{copyText}</p>
         </TooltipContent>
       </Tooltip>

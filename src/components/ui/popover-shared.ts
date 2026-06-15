@@ -1,16 +1,19 @@
 import * as React from "react"
-import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
-const popoverItemVariants = cva(
-  "relative flex cursor-pointer select-none items-center outline-none transition-colors text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2",
-  { variants: { size: { sm: "h-6 gap-1 rounded px-1.5 text-xs", base: "h-8 gap-1.5 rounded-md px-2 text-sm", lg: "h-10 gap-2 rounded-[10px] px-3 text-base" } }, defaultVariants: { size: "base" } }
-)
-
-const popoverItemGapMap = { sm: "gap-1", base: "gap-1.5", lg: "gap-2" } as const
+// 尺寸配置
+const sizeConfig = {
+  sm: { height: "h-6", rounded: "rounded", px: "px-1.5", gap: "gap-1", text: "text-xs", icon: "size-[14px]", indicator: "size-1.5 rounded-full" },
+  base: { height: "h-8", rounded: "rounded-lg", px: "px-2", gap: "gap-1.5", text: "text-sm", icon: "size-4", indicator: "size-2 rounded-full" },
+  lg: { height: "h-10", rounded: "rounded-xl", px: "px-3", gap: "gap-2", text: "text-base", icon: "size-[18px]", indicator: "size-2.5 rounded-full" },
+} as const
 
 // 主菜单 Context
-const PopoverContext = React.createContext<{ close: () => void; isOpen: boolean }>({ close: () => {}, isOpen: false })
+const PopoverContext = React.createContext<{
+  size: "sm" | "base" | "lg"
+  close: () => void
+  isOpen: boolean
+}>({ size: "base", close: () => {}, isOpen: false })
 
 // 子菜单 Context
 const PopoverSubContext = React.createContext<{
@@ -22,4 +25,4 @@ const PopoverSubContext = React.createContext<{
   cancelClose: () => void
 }>({ isSub: false, close: () => {}, open: () => {}, isOpen: false, scheduleClose: () => {}, cancelClose: () => {} })
 
-export { popoverItemVariants, popoverItemGapMap, cn, PopoverContext, PopoverSubContext }
+export { sizeConfig, cn, PopoverContext, PopoverSubContext }

@@ -11,6 +11,7 @@ import { ButtonPage } from "./demos/button2-demo"
 import { InputPage } from "./demos/input-demo"
 import { SelectPage } from "./demos/select-demo"
 import { NavigationPage } from "./demos/navigation-demo"
+import { TabsPage } from "./demos/tabs-demo"
 import { RadioPage } from "./demos/radio-demo"
 import { CheckboxPage } from "./demos/checkbox-demo"
 import { SwitchPage } from "./demos/switch-demo"
@@ -23,7 +24,7 @@ import { TablePage } from "./demos/table-demo"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 // 页面类型
-type PageType = "color" | "typography" | "icon" | "button" | "input" | "select" | "navigation" | "radio" | "checkbox" | "switch" | "pagination" | "popover" | "dialog" | "sonner" | "tooltip" | "table"
+type PageType = "color" | "typography" | "icon" | "button" | "input" | "select" | "navigation" | "tabs" | "radio" | "checkbox" | "switch" | "pagination" | "popover" | "dialog" | "sonner" | "tooltip" | "table"
 
 function App() {
   const [activePage, setActivePage] = React.useState<PageType>(() => {
@@ -36,6 +37,7 @@ function App() {
       "/input": "input",
       "/select": "select",
       "/navigation": "navigation",
+      "/tabs": "tabs",
       "/radio": "radio",
       "/checkbox": "checkbox",
       "/switch": "switch",
@@ -62,6 +64,7 @@ function App() {
         "/input": "input",
         "/select": "select",
         "/navigation": "navigation",
+        "/tabs": "tabs",
         "/radio": "radio",
         "/checkbox": "checkbox",
         "/switch": "switch",
@@ -84,22 +87,23 @@ function App() {
   }
 
   const navItems: { key: PageType; label: string }[] = [
-    { key: "color", label: "颜色 color" },
-    { key: "typography", label: "排版 typography" },
-    { key: "icon", label: "图标 icon" },
-    { key: "button", label: "按钮 button" },
-    { key: "input", label: "输入 input" },
-    { key: "select", label: "选择 select" },
+    { key: "color", label: "颜色 Color" },
+    { key: "typography", label: "排版 Typography" },
+    { key: "icon", label: "图标 Icon" },
+    { key: "button", label: "按钮 Button" },
+    { key: "input", label: "输入 Input" },
+    { key: "select", label: "选择 Select" },
     { key: "navigation", label: "导航 NavigationItem" },
+    { key: "tabs", label: "切换 Tabs" },
     { key: "radio", label: "单选 Radio" },
     { key: "checkbox", label: "多选 Checkbox" },
     { key: "switch", label: "开关 Switch" },
     { key: "pagination", label: "分页 Pagination" },
     { key: "popover", label: "面板 Popover" },
-    { key: "dialog", label: "浮层 floating" },
-    { key: "sonner", label: "通知 sonner" },
-    { key: "tooltip", label: "提示 tooltip" },
-    { key: "table", label: "表格 table" },
+    { key: "dialog", label: "浮层 Floating" },
+    { key: "sonner", label: "通知 Sonner" },
+    { key: "tooltip", label: "提示 Tooltip" },
+    { key: "table", label: "表格 Table" },
   ]
 
   // 页面组件映射
@@ -111,6 +115,7 @@ function App() {
     input: <InputPage />,
     select: <SelectPage />,
     navigation: <NavigationPage />,
+    tabs: <TabsPage />,
     radio: <RadioPage />,
     checkbox: <CheckboxPage />,
     switch: <SwitchPage />,

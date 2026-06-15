@@ -181,7 +181,7 @@ export function ButtonPage() {
 
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
-      <SectionTitle title="按钮 button" />
+      <SectionTitle title="按钮 Button" />
       <DemoTableWrapper>
         <DataTable
           data={tableData}

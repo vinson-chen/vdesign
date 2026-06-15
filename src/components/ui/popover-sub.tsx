@@ -1,8 +1,7 @@
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
-import { popoverItemVariants, popoverItemGapMap, PopoverContext, PopoverSubContext } from "./popover-shared"
+import { cva } from "class-variance-authority"
+import { cn, sizeConfig, PopoverContext, PopoverSubContext } from "./popover-shared"
 
 function PopoverSub({
   open,
@@ -66,29 +65,33 @@ function PopoverSub({
   )
 }
 
-function PopoverSubTrigger({
-  className,
-  size,
-  children,
-  ...props
-}: Omit<React.ComponentProps<"div">, "onChange"> &
-  VariantProps<typeof popoverItemVariants>) {
-  const s = size ?? "base"
+function PopoverSubTrigger({ className, children, ...props }: Omit<React.ComponentProps<"div">, "onChange">) {
+  const { size } = React.useContext(PopoverContext)
   const { open, isOpen, scheduleClose } = React.useContext(PopoverSubContext)
+  const config = sizeConfig[size]
 
   return (
     <PopoverPrimitive.Trigger asChild>
       <div
         data-slot="popover-sub-trigger"
         data-state={isOpen ? "open" : "closed"}
-        className={cn(popoverItemVariants({ size }), popoverItemGapMap[s], "justify-between", className)}
+        className={cn(
+          "relative flex cursor-pointer select-none items-center outline-none transition-colors justify-between",
+          "text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2",
+          config.height,
+          config.rounded,
+          config.px,
+          config.gap,
+          config.text,
+          className
+        )}
         onMouseEnter={open}
         onMouseLeave={scheduleClose}
         onClick={(e) => e.preventDefault()}
         {...props}
       >
         {children}
-        <svg className={cn("shrink-0 stroke-current stroke-2", s === "sm" ? "size-[14px]" : s === "lg" ? "size-[18px]" : "size-4")} viewBox="0 0 24 24" fill="none">
+        <svg className={cn("shrink-0 stroke-current stroke-2", config.icon)} viewBox="0 0 24 24" fill="none">
           <path d="M9 18l6-6-6-6" />
         </svg>
       </div>
@@ -97,28 +100,13 @@ function PopoverSubTrigger({
 }
 
 const popoverSubContentVariants = cva(
-  "z-50 min-w-32 overflow-hidden border border-neutral-2 bg-white-100 shadow-[0_0_4px_1px_var(--black-5),0_8px_8px_0_var(--black-5)] p-1",
-  {
-    variants: {
-      size: {
-        sm: "rounded-md",
-        base: "rounded-lg",
-        lg: "rounded-xl",
-      },
-    },
-    defaultVariants: { size: "base" },
-  }
+  "z-50 min-w-32 overflow-hidden border border-neutral-2 bg-white-100 shadow-[0_0_4px_1px_var(--black-5),0_8px_8px_0_var(--black-5)] p-1"
 )
 
-function PopoverSubContent({
-  className,
-  size,
-  sideOffset = 4,
-  align = "start",
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content> &
-  VariantProps<typeof popoverSubContentVariants>) {
+function PopoverSubContent({ className, sideOffset = 4, align = "start", ...props }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+  const { size } = React.useContext(PopoverContext)
   const { scheduleClose, cancelClose } = React.useContext(PopoverSubContext)
+  const config = sizeConfig[size]
 
   return (
     <PopoverPrimitive.Portal>
@@ -128,7 +116,8 @@ function PopoverSubContent({
         align={align}
         side="right"
         className={cn(
-          popoverSubContentVariants({ size }),
+          popoverSubContentVariants(),
+          config.rounded === "rounded" ? "rounded-md" : config.rounded === "rounded-[10px]" ? "rounded-xl" : "rounded-lg",
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className
         )}
