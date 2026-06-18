@@ -31,8 +31,10 @@ function HeaderCellEditView({
   React.useEffect(() => {
     setEditedTitle(String(value))
     setEditedType(currentColumnType)
-    if (currentColumnDef?.options && currentColumnType === "select") {
-      setSelectOptions((currentColumnDef.options.items as SelectOptionItem[]) ?? [])
+    if (currentColumnDef?.options) {
+      if (currentColumnType === "select") {
+        setSelectOptions((currentColumnDef.options.items as SelectOptionItem[]) ?? [])
+      }
     } else {
       setSelectOptions([])
     }
@@ -92,9 +94,9 @@ function HeaderCellEditView({
             placeholder: "选择列类型",
             options: [
               { value: "text", label: "文本列" },
-              { value: "input", label: "输入列" },
               { value: "select", label: "单选列" },
               { value: "button", label: "按钮列" },
+              { value: "attachment", label: "附件列" },
             ],
           },
           // 只有单选列才显示选项内容配置

@@ -16,7 +16,7 @@ const buttonVariants = cva(
         destructive:
           "bg-error-1 text-error-5 hover:bg-error-2 active:bg-error-2 data-[state=open]:bg-error-2",
         link:
-          "bg-transparent text-brand-5 hover:text-brand-6 active:text-brand-6",
+          "bg-transparent text-brand-5 hover:text-brand-6 active:text-brand-6 hover:underline underline-offset-4",
       },
       size: {
         sm: "h-6 rounded-md px-1.5 text-xs leading-5 gap-1 [&_svg]:size-[14px]",
@@ -48,7 +48,13 @@ const buttonVariants = cva(
       {
         variant: "link",
         disabled: true,
-        class: "text-black-25 hover:text-black-25 active:text-black-25 active:translate-y-0",
+        class: "text-black-25 hover:text-black-25 hover:no-underline active:text-black-25 active:translate-y-0",
+      },
+      // link: remove padding for all sizes
+      {
+        variant: "link",
+        size: ["sm", "base", "lg"],
+        class: "px-0",
       },
     ],
     defaultVariants: {

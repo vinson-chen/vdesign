@@ -10,9 +10,9 @@ export type CellType =
   | 'checkbox'
   | 'editable'
   | 'button'
+  | 'attachment'
   | 'icon'
   | 'select'
-  | 'input'
 
 // 单元格渲染器 Props 接口
 export interface CellRendererProps {
@@ -22,11 +22,15 @@ export interface CellRendererProps {
   columnId: string
   onChange?: (value: unknown) => void
   isEditing: boolean
+  isLocked?: boolean  // 锁定态（用于按钮列等）
   isCellHovering?: boolean
   readOnly?: boolean
   onStartEdit?: () => void
-  // 列级别的组件配置（如 Select 的 options、Button 的 variant）
+  onLockCell?: () => void  // 进入锁定态
+  // 列级别的组件配置（如 Select 的 options、Button 的 buttons）
   options?: Record<string, unknown>
+  // 单元格级别的配置（如按钮的 urls）
+  cellData?: CellData
   // 编辑态额外 props（由 CellContent 传入）
   editingValue?: string
   onUpdateEditingValue?: (value: string) => void
@@ -46,6 +50,12 @@ export interface SelectOptionItem {
   disabled?: boolean
 }
 
+// Button 单元格配置（单元格级别）
+export interface ButtonCellConfig {
+  label?: string  // 按钮名称，为空时显示图标按钮
+  url?: string    // 超链接
+}
+
 // 单元格数据
 export interface CellData {
   id: string
@@ -61,6 +71,10 @@ export interface CellData {
   defaultValue?: string
   // 单元格级别配置（优先于列级 ColumnDef.options）
   options?: Record<string, unknown>
+  // 按钮单元格专属配置（单元格级别）
+  buttonConfig?: ButtonCellConfig
+  // 附件单元格专属配置（单元格级别）
+  attachmentFiles?: File[]
 }
 
 // 列定义

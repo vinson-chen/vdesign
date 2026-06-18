@@ -20,11 +20,12 @@ import { PopoverPage } from "./demos/popover-demo"
 import { DialogPage } from "./demos/dialog-demo"
 import { SonnerPage } from "./demos/sonner-demo"
 import { TooltipPage } from "./demos/tooltip-demo"
+import { UploadPage } from "./demos/upload-demo"
 import { TablePage } from "./demos/table-demo"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 // 页面类型
-type PageType = "color" | "typography" | "icon" | "button" | "input" | "select" | "navigation" | "tabs" | "radio" | "checkbox" | "switch" | "pagination" | "popover" | "dialog" | "sonner" | "tooltip" | "table"
+type PageType = "color" | "typography" | "icon" | "button" | "input" | "select" | "navigation" | "tabs" | "radio" | "checkbox" | "switch" | "pagination" | "popover" | "dialog" | "sonner" | "tooltip" | "upload" | "table"
 
 function App() {
   const [activePage, setActivePage] = React.useState<PageType>(() => {
@@ -46,6 +47,7 @@ function App() {
       "/dialog": "dialog",
       "/sonner": "sonner",
       "/tooltip": "tooltip",
+      "/upload": "upload",
       "/table": "table",
     }
     return pageMap[hash] || "color"
@@ -73,6 +75,7 @@ function App() {
         "/dialog": "dialog",
         "/sonner": "sonner",
         "/tooltip": "tooltip",
+        "/upload": "upload",
         "/table": "table",
         "/layout": "layout",
       }
@@ -103,6 +106,7 @@ function App() {
     { key: "dialog", label: "浮层 Floating" },
     { key: "sonner", label: "通知 Sonner" },
     { key: "tooltip", label: "提示 Tooltip" },
+    { key: "upload", label: "上传 Upload" },
     { key: "table", label: "表格 Table" },
   ]
 
@@ -124,6 +128,7 @@ function App() {
     dialog: <DialogPage />,
     sonner: <SonnerPage />,
     tooltip: <TooltipPage />,
+    upload: <UploadPage />,
     table: <TablePage />,
   }
 

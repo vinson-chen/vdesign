@@ -40,13 +40,13 @@ const dialogContentVariants = cva(
   "fixed left-1/2 top-1/2 z-50 w-[calc(100%-32px)] max-w-[95vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-white-100 shadow-[0_0_8px_1px_var(--black-5),0_12px_24px_-4px_var(--black-10)]"
 )
 
-function DialogContent({ className, size = "base", children, ...props }: React.ComponentProps<typeof DialogPrimitive.Content> & { size?: "base" | "lg" }) {
+function DialogContent({ className, overlayClassName, size = "base", children, ...props }: React.ComponentProps<typeof DialogPrimitive.Content> & { size?: "base" | "lg", overlayClassName?: string }) {
   const config = sizeConfig[size]
 
   return (
     <DialogContext.Provider value={{ size }}>
       <DialogPortal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/25 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 bg-black/25 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", overlayClassName)} />
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(

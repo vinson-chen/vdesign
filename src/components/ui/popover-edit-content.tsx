@@ -100,21 +100,21 @@ function PopoverEditContent({ size, fields }: PopoverEditContentProps) {
 }
 
 // 内容配置字段（仅用于单选列选项配置）
-function ContentField({ field, paddingClass, size }: {
+function ContentField({ field, paddingClass }: {
   field: EditField
   paddingClass: string
   size: "base" | "sm" | "lg"
 }) {
   const selectOptions = field.selectOptions ?? []
 
-  // 单选列选项拖拽状态
+  // 拖拽状态
   const [dragIndex, setDragIndex] = React.useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
 
   // 生成唯一 ID
   const generateOptionId = () => `opt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 
-  // 添加选项：直接创建空选项组
+  // 添加选项
   const handleAddOption = () => {
     const newOption: SelectOptionItem = {
       value: generateOptionId(),
@@ -150,9 +150,12 @@ function ContentField({ field, paddingClass, size }: {
   const handleDragEnd = () => {
     if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
       const newOptions = [...selectOptions]
-      const [removed] = newOptions.splice(dragIndex, 1)
-      newOptions.splice(dragOverIndex, 0, removed)
-      field.onSelectOptionsChange?.(newOptions)
+      const removed = newOptions[dragIndex]
+      if (removed) {
+        newOptions.splice(dragIndex, 1)
+        newOptions.splice(dragOverIndex, 0, removed)
+        field.onSelectOptionsChange?.(newOptions)
+      }
     }
     setDragIndex(null)
     setDragOverIndex(null)

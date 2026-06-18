@@ -2,7 +2,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { TableProvider, useTable, useTableData, useTableState, useTableActions, useFirstDataColumn, CellRenderersContext } from "@/hooks"
-import type { TableData, CellType, GroupedData, RowData, ColumnDef, CellRendererRegistry, SelectOptionItem } from "@/types/table"
+import type { TableData, CellType, GroupedData, RowData, CellRendererRegistry } from "@/types/table"
 import { Cell } from "./cell"
 import { Checkbox } from "./checkbox"
 import { Button } from "./button"
@@ -10,15 +10,13 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-  PopoverMenuItem,
-  PopoverSeparator,
   PopoverContext,
 } from "./popover"
 import { HeaderCellMenuView } from "./header-cell-menu"
 import { HeaderCellEditView } from "./header-cell-edit"
 import { HeaderCellHideManagerView } from "./header-cell-hide-manager"
 import { HeaderCellDimensionView } from "./header-cell-dimension"
-import { defaultCellRenderers, TextCellRenderer } from "./cell-renderers"
+import { TextCellRenderer } from "./cell-renderers"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
 
 const tableVariants = cva("flex flex-col relative", {
@@ -87,7 +85,7 @@ interface CellContentProps {
 }
 
 // 表头文本单元格内部组件（访问 Popover Context）
-function HeaderTextCellInner({ cellId, value, columnId, currentColumnType, editView, setEditView, hideColumnView, setHideColumnView, dimensionView, setDimensionView, onDoubleClickTitle }: {
+function HeaderTextCellInner({ cellId: _cellId, value, columnId, currentColumnType, editView, setEditView, hideColumnView, setHideColumnView, dimensionView, setDimensionView, onDoubleClickTitle }: {
   cellId: string
   value: string | boolean | number
   columnId?: string
@@ -140,7 +138,7 @@ function HeaderTextCellInner({ cellId, value, columnId, currentColumnType, editV
         </PopoverTrigger>
       )}
       {!state.readOnly && (
-        <PopoverContent size="base" align="end" alignOffset={-8} sideOffset={8} className="w-[200px]">
+        <PopoverContent align="end" alignOffset={-8} sideOffset={8} className="w-[200px]">
           <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
             {!editView && !hideColumnView && !dimensionView && (
               <HeaderCellMenuView
@@ -177,8 +175,6 @@ function HeaderTextCellInner({ cellId, value, columnId, currentColumnType, editV
 // 表头文本单元格组件（带菜单）
 function HeaderTextCell({ cellId, value, columnId }: { cellId: string; value: string | boolean | number; columnId?: string }) {
   const data = useTableData()
-  const state = useTableState()
-  const actions = useTableActions()
   const [editView, setEditView] = React.useState(false)
   const [hideColumnView, setHideColumnView] = React.useState(false)
   const [dimensionView, setDimensionView] = React.useState(false)
@@ -290,6 +286,13 @@ function CellContent({ cellId, type, value, rowId, isHeader, columnId, rowIndex,
   // 合并 options：单元格级优先于列级
   const mergedOptions = cellOptions ? { ...columnDef?.options, ...cellOptions } : columnDef?.options
 
+  // 判断是否为锁定态
+  const isLocked = state.lockedCellId === cellId
+
+  // 获取当前单元格的完整数据（从 rows 中查找）
+  const currentRow = rowId ? data.rows.find(r => r.id === rowId) : undefined
+  const currentCell = currentRow?.cells.find(c => c.id === cellId)
+
   return (
     <Renderer
       value={value}
@@ -298,10 +301,13 @@ function CellContent({ cellId, type, value, rowId, isHeader, columnId, rowIndex,
       columnId={columnId!}
       onChange={(newValue: unknown) => actions.updateCellValue(cellId, newValue)}
       isEditing={state.editingCellId === cellId}
+      isLocked={isLocked}
       isCellHovering={isCellHovering}
       readOnly={state.readOnly}
       onStartEdit={() => actions.startEdit(cellId, String(value))}
+      onLockCell={() => actions.lockCell(cellId)}
       options={mergedOptions}
+      cellData={currentCell}
       editingValue={state.editingValue}
       onUpdateEditingValue={actions.updateEditingValue}
       onFinishEdit={actions.finishEdit}
@@ -326,7 +332,7 @@ interface RowDef {
 interface RowRendererProps {
   row: RowDef
   isHeader?: boolean
-  isLastRow?: boolean
+  isLastRow?: boolean  // 可选，标记最后一行
   columnIds?: string[]
   rowIndex?: number
   onCellResizeStart?: (columnId: string, startWidth: number, startX: number) => void
@@ -350,7 +356,7 @@ interface RowRendererProps {
 }
 
 // Memo 化 RowRenderer：避免父组件 hover 等状态变化时全量重渲染
-const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, columnIds, rowIndex, onCellResizeStart, onCellHoverEdge, onHeaderCellClick, onHeaderCellMouseDown, draggingColumnId, onCellHover, hoveringCellId, onBodyCellClick, frozenOffsets = {}, frozenWidth = 0, rowWidth: rowWidthProp, style, groupColumnId, hasOverflow }: RowRendererProps) {
+const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow: _isLastRow, columnIds, rowIndex, onCellResizeStart, onCellHoverEdge, onHeaderCellClick, onHeaderCellMouseDown, draggingColumnId, onCellHover, hoveringCellId, onBodyCellClick, frozenOffsets = {}, frozenWidth = 0, rowWidth: rowWidthProp, style, groupColumnId, hasOverflow }: RowRendererProps) {
   const state = useTableState()
   const data = useTableData()
   const actions = useTableActions()
@@ -360,7 +366,8 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
   const rowWidth = rowWidthProp ?? row.cells.reduce((sum, cell, index) => {
     const cid = columnIds?.[index] ?? cell.id
     const columnDef = data.columns[index]
-    const width = state.columnWidths[cid] ?? columnDef?.width ?? (cell.width === 'auto' ? 40 : cell.width) ?? 80
+    const cellWidth = cell.width === 'auto' ? 40 : (cell.width ?? (columnDef?.width === 'auto' ? 40 : columnDef?.width ?? 80))
+    const width = state.columnWidths[cid] ?? cellWidth
     return sum + width
   }, 0)
 
@@ -378,10 +385,13 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
         const columnDef = data.columns[index]
         // 单元格属性：优先从 CellData 获取，否则从 ColumnDef 继承
         const cellType = cell.type ?? columnDef?.type ?? "text"
-        const cellWidth = state.columnWidths[columnId] ?? columnDef?.width ?? (cell.width === 'auto' ? 40 : cell.width) ?? 80
+        // 处理 width：'auto' 转换为固定宽度 40
+        const rawWidth = cell.width ?? columnDef?.width ?? 80
+        const cellWidth = rawWidth === 'auto' ? 40 : rawWidth
+        const width = state.columnWidths[columnId] ?? cellWidth
         const isFrozen = state.frozenColumns.has(columnId)
         const frozenLeft = frozenOffsets[columnId] ?? 0
-        const isLastFrozen = isFrozen && frozenLeft + cellWidth === frozenWidth
+        const isLastFrozen = isFrozen && frozenLeft + width === frozenWidth
 
         const isEditing = !isHeader && state.editingCellId === cell.id && cellType === "text"
         const isColumnSelected = state.selectedColumnId === columnId
@@ -390,7 +400,6 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
 
         // 表头 variant 优先级：headerSelected > header
         // 表体 variant 优先级：editing > locked > selected(行或列) > defaultHover > default
-        // readOnly 模式下无 defaultHover
         const cellVariant = isHeader
           ? (isColumnSelected ? "headerSelected" : "header")
           : isEditing
@@ -410,7 +419,7 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
           <Cell
             key={cell.id}
             data-cell-id={!isHeader ? cell.id : undefined}
-            width={cellWidth}
+            width={width}
             variant={cellVariant}
             isLastCell={false}
             resizable={isHeader && cellType !== "checkbox"}
@@ -431,6 +440,8 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
               isHeader && state.readOnly && "hover:bg-neutral-1",
               isFrozen && "sticky",
               isHeader && isFrozen && "z-20",
+              // ⭐ 表头冻结列添加 top-0，让热力图追踪器正确识别为交叉区
+              isHeader && isFrozen && "top-0",
               !isHeader && isFrozen && "z-10",
               isLastFrozen && hasOverflow && "shadow-[2px_0_4px_-2px_var(--black-10)]",
               // 光标
@@ -479,7 +490,6 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow, 
   // 自定义比较函数：只有这些 props 变化时才重渲染
   return prev.row === next.row
     && prev.isHeader === next.isHeader
-    && prev.isLastRow === next.isLastRow
     && prev.columnIds === next.columnIds
     && prev.rowIndex === next.rowIndex
     && prev.hoveringCellId === next.hoveringCellId
@@ -1345,16 +1355,38 @@ function DataTableInner({
   React.useEffect(() => {
     if (!state.selectedColumnId && !state.lockedCellId) return
 
-    const handleClickOutside = (e: MouseEvent) => {
+    let pressedInsideTable = false
+
+    const handlePointerDown = (e: PointerEvent) => {
       if (isHeaderPopoverOpenRef.current) return
-      if (!tableRef.current?.contains(e.target as Node)) {
-        actions.selectColumn(null)
-        actions.lockCell(null)
+      // 检查按下位置是否在表格内
+      pressedInsideTable = tableRef.current?.contains(e.target as Node) ?? false
+      // 检查按下位置是否在 PopoverContent/TooltipContent 内（Portal 渲染在表格外，但逻辑上属于表格）
+      const target = e.target as HTMLElement
+      if (target.closest('[data-slot="popover-content"], [data-slot="tooltip-content"]')) {
+        pressedInsideTable = true
       }
     }
 
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
+    const handlePointerUp = () => {
+      if (isHeaderPopoverOpenRef.current) return
+      // 按下位置在表格内 → 无论释放位置在哪，都保持锁定态
+      if (pressedInsideTable) {
+        pressedInsideTable = false
+        return
+      }
+      // 按下位置在表格外 → 释放时退出锁定态（完整的外部点击）
+      actions.selectColumn(null)
+      actions.lockCell(null)
+      pressedInsideTable = false
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('pointerup', handlePointerUp)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('pointerup', handlePointerUp)
+    }
   }, [state.selectedColumnId, state.lockedCellId, actions])
 
   return (

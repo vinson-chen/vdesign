@@ -190,7 +190,21 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
       const cellIndex = row.cells.findIndex(c => c.id === cellId)
       if (cellIndex === -1) return row
       const newCells = [...row.cells]
-      newCells[cellIndex] = { ...row.cells[cellIndex], value: value as string | boolean | number }
+
+      // 处理不同类型的更新
+      if (typeof value === 'object' && value !== null) {
+        // 对象类型：更新特定属性（如 buttonUrls）
+        const updates = value as Record<string, unknown>
+        const currentCell = row.cells[cellIndex]
+        newCells[cellIndex] = {
+          ...currentCell,
+          ...updates
+        }
+      } else {
+        // 基础类型：更新 value
+        newCells[cellIndex] = { ...row.cells[cellIndex], value: value as string | boolean | number }
+      }
+
       return { ...row, cells: newCells }
     }))
   }, [])
