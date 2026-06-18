@@ -94,8 +94,9 @@ function HeaderCellEditView({
             placeholder: "选择列类型",
             options: [
               { value: "text", label: "文本列" },
-              { value: "select", label: "单选列" },
-              { value: "button", label: "按钮列" },
+              { value: "number", label: "数字列" },
+              { value: "select", label: "选择列" },
+              { value: "button", label: "链接列" },
               { value: "attachment", label: "附件列" },
             ],
           },

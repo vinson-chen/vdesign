@@ -7,6 +7,7 @@ import type * as React from "react"
 // 单元格类型
 export type CellType =
   | 'text'
+  | 'number'
   | 'checkbox'
   | 'editable'
   | 'button'

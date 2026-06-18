@@ -98,6 +98,43 @@ function TextCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdat
   )
 }
 
+// 数字单元格渲染器（只能输入数字，右对齐）
+function NumberCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, readOnly }: CellRendererProps) {
+  if (isEditing) {
+    return (
+      <input
+        type="text"
+        value={editingValue ?? ""}
+        onChange={(e) => {
+          // 只允许输入数字、小数点、负号
+          const newValue = e.target.value
+          // 验证格式：可选负号 + 数字 + 可选小数点 + 数字
+          if (newValue === '' || /^-?\d*\.?\d*$/.test(newValue)) {
+            onUpdateEditingValue?.(newValue)
+          }
+        }}
+        onBlur={() => onFinishEdit?.()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.preventDefault()
+          if (e.key === "Escape") e.preventDefault()
+        }}
+        onFocus={(e) => e.target.select()}
+        className="absolute inset-0 bg-transparent border-none outline-none p-2 text-inherit font-inherit overflow-hidden text-right"
+        autoFocus
+      />
+    )
+  }
+
+  return (
+    <TruncatedText
+      className="flex-1 w-full min-h-6 cursor-pointer truncate text-right"
+      onDoubleClick={readOnly ? undefined : () => onStartEdit?.()}
+    >
+      {String(value) || " "}
+    </TruncatedText>
+  )
+}
+
 // 输入框单元格渲染器
 function InputCellRenderer({ value, options, onChange, cellId, isCellHovering }: CellRendererProps) {
   const [localValue, setLocalValue] = React.useState(String(value))
@@ -861,6 +898,7 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }
 // 默认渲染器注册表
 const defaultCellRenderers: Record<string, React.ComponentType<CellRendererProps>> = {
   text: TextCellRenderer,
+  number: NumberCellRenderer,
   input: InputCellRenderer,
   select: SelectEditableCellRenderer, // 使用新版可编辑渲染器
   button: ButtonCellRenderer,
@@ -870,6 +908,7 @@ const defaultCellRenderers: Record<string, React.ComponentType<CellRendererProps
 
 export {
   TextCellRenderer,
+  NumberCellRenderer,
   InputCellRenderer,
   SelectCellRenderer,
   SelectEditableCellRenderer,
