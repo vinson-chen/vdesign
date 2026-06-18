@@ -110,64 +110,61 @@ function HeaderTextCellInner({ cellId: _cellId, value, columnId, currentColumnTy
     <>
       <TruncatedText
         className="truncate cursor-pointer flex-1"
-        onDoubleClick={state.readOnly ? undefined : onDoubleClickTitle}
+        onDoubleClick={onDoubleClickTitle}
       >
         {String(value)}
       </TruncatedText>
-      {!state.readOnly && (
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="iconSm"
-            leftIcon="icon-chevron-down"
-            className={cn(
-              "transition-opacity",
-              isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            )}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (state.selectedColumnId === columnId) {
-                actions.selectColumn(null)
-              }
-              if (state.lockedCellId) {
-                actions.lockCell(null)
-              }
-            }}
-            onDoubleClick={(e) => e.stopPropagation()}
-          />
-        </PopoverTrigger>
-      )}
-      {!state.readOnly && (
-        <PopoverContent align="end" alignOffset={-8} sideOffset={8} className="w-[200px]">
-          <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-            {!editView && !hideColumnView && !dimensionView && (
-              <HeaderCellMenuView
-                columnId={columnId}
-                isFirstDataColumn={isFirstDataColumn}
-                groupColumnId={state.groupColumnId}
-                onEdit={() => setEditView(true)}
-                onHideManager={() => setHideColumnView(true)}
-                onDimension={() => setDimensionView(true)}
-              />
-            )}
-            {editView && (
-              <HeaderCellEditView
-                columnId={columnId}
-                value={value}
-                currentColumnType={currentColumnType}
-                currentColumnDef={currentColumnDef}
-                onClose={close}
-              />
-            )}
-            {hideColumnView && (
-              <HeaderCellHideManagerView firstDataColumnId={firstDataColumnId} />
-            )}
-            {dimensionView && (
-              <HeaderCellDimensionView />
-            )}
-          </div>
-        </PopoverContent>
-      )}
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="iconSm"
+          leftIcon="icon-chevron-down"
+          className={cn(
+            "transition-opacity",
+            isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}
+          onClick={(e) => {
+            e.stopPropagation()
+            if (state.selectedColumnId === columnId) {
+              actions.selectColumn(null)
+            }
+            if (state.lockedCellId) {
+              actions.lockCell(null)
+            }
+          }}
+          onDoubleClick={(e) => e.stopPropagation()}
+        />
+      </PopoverTrigger>
+      <PopoverContent align="end" alignOffset={-8} sideOffset={8} className="w-[200px]">
+        <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+          {!editView && !hideColumnView && !dimensionView && (
+            <HeaderCellMenuView
+              columnId={columnId}
+              isFirstDataColumn={isFirstDataColumn}
+              groupColumnId={state.groupColumnId}
+              readOnly={state.readOnly}
+              onEdit={() => setEditView(true)}
+              onHideManager={() => setHideColumnView(true)}
+              onDimension={() => setDimensionView(true)}
+            />
+          )}
+          {editView && (
+            <HeaderCellEditView
+              columnId={columnId}
+              value={value}
+              currentColumnType={currentColumnType}
+              currentColumnDef={currentColumnDef}
+              onClose={close}
+            />
+          )}
+          {hideColumnView && (
+            <HeaderCellHideManagerView firstDataColumnId={firstDataColumnId} />
+          )}
+          {dimensionView && (
+            <HeaderCellDimensionView />
+          )}
+        </div>
+      </PopoverContent>
     </>
   )
 }
@@ -436,8 +433,6 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow: 
             slotClassName={isHeader && cellType === "text" ? "justify-between" : cellType === "checkbox" ? "justify-center" : undefined}
             className={cn(
               isHeader && cellType === "text" && "group",
-              // readOnly 模式下表头无悬停态变化
-              isHeader && state.readOnly && "hover:bg-neutral-1",
               isFrozen && "sticky",
               isHeader && isFrozen && "z-20",
               // ⭐ 表头冻结列添加 top-0，让热力图追踪器正确识别为交叉区
@@ -897,18 +892,16 @@ function DataTableInner({
 
   // 点击表头单元格选中列
   const handleHeaderCellClick = React.useCallback((columnId: string, _cellType: string, e: React.MouseEvent) => {
-    // readOnly 模式下禁用列选中
-    if (state.readOnly) return
     e.stopPropagation()
     if (state.selectedColumnId === columnId) return
     actions.selectColumn(columnId)
-  }, [actions, state.selectedColumnId, state.readOnly])
+  }, [actions, state.selectedColumnId])
 
   // 拖拽列顺序：mousedown 记录起始位置，实际拖拽在 mousemove ≥4px 时启动
   const dragNativeCleanupRef = React.useRef<(() => void) | null>(null)
 
   const handleHeaderCellMouseDown = React.useCallback((columnId: string, e: React.MouseEvent) => {
-    // 只在选中列 + 非冻结列时触发
+    // 只在选中列 + 非冻结列时触发（readOnly 模式也支持拖拽）
     if (state.selectedColumnId !== columnId || state.frozenColumns.has(columnId)) return
     e.preventDefault()
     e.stopPropagation()
