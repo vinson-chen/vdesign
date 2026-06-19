@@ -435,7 +435,6 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow: 
               isHeader && cellType === "text" && "group",
               isFrozen && "sticky",
               isHeader && isFrozen && "z-20",
-              // ⭐ 表头冻结列添加 top-0，让热力图追踪器正确识别为交叉区
               isHeader && isFrozen && "top-0",
               !isHeader && isFrozen && "z-10",
               isLastFrozen && hasOverflow && "shadow-[2px_0_4px_-2px_var(--black-10)]",
