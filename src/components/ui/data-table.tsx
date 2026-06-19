@@ -74,7 +74,7 @@ function TruncatedText({ children, className, onDoubleClick }: { children: strin
 
 interface CellContentProps {
   cellId: string
-  type: string
+  type?: string
   value: string | boolean | number
   rowId?: string
   isHeader?: boolean
@@ -276,7 +276,7 @@ function CellContent({ cellId, type, value, rowId, isHeader, columnId, rowIndex,
   }
 
   // 表体单元格 → 查找渲染器
-  const Renderer = cellRenderers[type] || TextCellRenderer
+  const Renderer = cellRenderers[type || 'text'] || TextCellRenderer
   // 使用 columnMap O(1) 查找，替代 Array.find() O(n)
   const columnDef = columnId ? data.columnMap?.get(columnId) : undefined
 
@@ -309,14 +309,14 @@ function CellContent({ cellId, type, value, rowId, isHeader, columnId, rowIndex,
       onUpdateEditingValue={actions.updateEditingValue}
       onFinishEdit={actions.finishEdit}
       onCancelEdit={actions.cancelEdit}
-      onUpdateColumnOptions={(newOptions) => actions.updateColumnOptions(columnId!, newOptions)}
+      onUpdateColumnOptions={(newOptions: Record<string, unknown>) => actions.updateColumnOptions(columnId!, newOptions)}
     />
   )
 }
 
 interface CellDef {
   id: string
-  type: string
+  type?: string
   value: string | boolean | number
   width?: number | 'auto'
 }
@@ -1072,8 +1072,9 @@ function DataTableInner({
       : data.rows
     for (let rowIndex = 0; rowIndex < allRows.length; rowIndex++) {
       const row = allRows[rowIndex]
+      if (!row) continue
       for (let colIndex = 0; colIndex < row.cells.length; colIndex++) {
-        if (row.cells[colIndex].id === state.lockedCellId) {
+        if (row.cells[colIndex]?.id === state.lockedCellId) {
           return { rowIndex, colIndex, rowId: row.id }
         }
       }
@@ -1266,8 +1267,8 @@ function DataTableInner({
               if (e.key.length === 1 && e.key !== 'Enter') {
                 setTimeout(() => {
                   // 设置原生值
-                  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-                  nativeInputValueSetter.call(inputElement, e.key)
+                  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+                  nativeInputValueSetter?.call(inputElement, e.key)
                   // 触发 React 的 onChange
                   inputElement.dispatchEvent(new Event('input', { bubbles: true }))
                 }, 0)
