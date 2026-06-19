@@ -1,6 +1,6 @@
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
-import { cva, type VariantProps } from "class-variance-authority"
+import { cva } from "class-variance-authority"
 import { cn, sizeConfig, PopoverContext, PopoverSubContext } from "./popover-shared"
 
 function Popover({ children, size = "base", ...props }: React.ComponentProps<typeof PopoverPrimitive.Root> & { size?: "sm" | "base" | "lg" }) {
@@ -53,7 +53,7 @@ function PopoverContent({ className, sideOffset = 4, align = "start", ...props }
         align={align}
         className={cn(
           popoverContentVariants(),
-          config.rounded === "rounded" ? "rounded-md" : config.rounded === "rounded-[10px]" ? "rounded-xl" : "rounded-lg",
+          config.rounded === "rounded" ? "rounded-md" : (config.rounded as string) === "rounded-[10px]" ? "rounded-xl" : "rounded-lg",
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className
         )}
@@ -63,7 +63,7 @@ function PopoverContent({ className, sideOffset = 4, align = "start", ...props }
   )
 }
 
-function PopoverItem({ className, ...props }: React.ComponentProps<"div">) {
+function PopoverItem({ className, disabled: _disabled, ...props }: React.ComponentProps<"div"> & { disabled?: boolean }) {
   const { size } = React.useContext(PopoverContext)
   const config = sizeConfig[size]
 
@@ -85,7 +85,7 @@ function PopoverItem({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function PopoverMenuItem({ className, closeOnClick = false, onClick, children, ...props }: React.ComponentProps<"div"> & { closeOnClick?: boolean }) {
+function PopoverMenuItem({ className, closeOnClick = false, onClick, children, size: _size, ...props }: React.ComponentProps<"div"> & { closeOnClick?: boolean; size?: string }) {
   const { size } = React.useContext(PopoverContext)
   const { isSub, close: subClose } = React.useContext(PopoverSubContext)
   const { close: mainClose } = React.useContext(PopoverContext)

@@ -13,6 +13,7 @@ export type CellType =
   | 'button'
   | 'attachment'
   | 'icon'
+  | 'input'
   | 'select'
   | 'reference'
 

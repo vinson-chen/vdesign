@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
-import { cva, type VariantProps } from "class-variance-authority"
+import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 // Context 自动传递 size

@@ -20,8 +20,8 @@ const paginationVariants = cva("flex items-center", {
 
 function Pagination({ className, size = "base", ...props }: React.ComponentProps<"nav"> & VariantProps<typeof paginationVariants>) {
   return (
-    <PaginationContext.Provider value={{ size }}>
-      <nav data-slot="pagination" role="navigation" aria-label="pagination" className={cn(paginationVariants({ size }), className)} {...props} />
+    <PaginationContext.Provider value={{ size: size! }}>
+      <nav data-slot="pagination" role="navigation" aria-label="pagination" className={cn(paginationVariants({ size: size! }), className)} {...props} />
     </PaginationContext.Provider>
   )
 }

@@ -6,7 +6,7 @@ import { Button } from "./button"
 import { PopoverContext } from "./popover"
 import { useTable } from "@/hooks"
 
-function HeaderCellDimensionView({ onSave }: { onSave?: () => void }) {
+function HeaderCellDimensionView() {
   const { data, state, actions } = useTable()
   const { close } = React.useContext(PopoverContext)
 
@@ -77,7 +77,7 @@ function HeaderCellDimensionView({ onSave }: { onSave?: () => void }) {
         }
       }}
     >
-      <PopoverLabel size="base">行数</PopoverLabel>
+      <PopoverLabel>行数</PopoverLabel>
       <div className="px-2 pb-1.5">
         <Input
           variant="basic"
@@ -93,7 +93,7 @@ function HeaderCellDimensionView({ onSave }: { onSave?: () => void }) {
           className="w-full"
         />
       </div>
-      <PopoverLabel size="base">列数</PopoverLabel>
+      <PopoverLabel>列数</PopoverLabel>
       <div className="px-2 pb-1.5">
         <Input
           variant="basic"

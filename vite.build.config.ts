@@ -8,8 +8,17 @@ export default defineConfig({
   plugins: [
     react(),
     dts({
-      include: ["src/**/*.ts", "src/**/*.tsx"],
+      include: [
+        "src/components/**/*.ts",
+        "src/components/**/*.tsx",
+        "src/hooks/**/*.ts",
+        "src/hooks/**/*.tsx",
+        "src/lib/**/*.ts",
+        "src/types/**/*.ts",
+        "src/index.ts"
+      ],
       outDir: "dist",
+      exclude: ["src/demo/**/*"]
     }),
   ],
   resolve: {

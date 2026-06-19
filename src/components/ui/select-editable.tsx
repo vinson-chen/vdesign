@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
+import { type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Input } from "./input"
 import { Popover, PopoverTrigger, PopoverContent, PopoverSeparator, PopoverItem, sizeConfig } from "./popover"
@@ -19,6 +19,7 @@ interface SelectEditableProps extends VariantProps<typeof selectTriggerVariants>
   onItemsChange?: (items: SelectEditableItem[]) => void
   placeholder?: string
   disabled?: boolean
+  size?: "sm" | "base" | "lg"
   className?: string
 }
 
@@ -37,7 +38,7 @@ function SelectEditable({
   const [searchKeyword, setSearchKeyword] = React.useState("")
   const [open, setOpen] = React.useState(false)
 
-  const config = sizeConfig[size]
+  const config = sizeConfig[size as keyof typeof sizeConfig]
 
   // 获取当前选中项的 label
   const selectedLabel = React.useMemo(() => {

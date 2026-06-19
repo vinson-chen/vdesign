@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Toaster as SonnerToaster, toast } from "sonner"
 
 interface ToasterProps {

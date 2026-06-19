@@ -207,14 +207,14 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
       if (typeof value === 'object' && value !== null) {
         // 对象类型：更新特定属性（如 buttonUrls）
         const updates = value as Record<string, unknown>
-        const currentCell = row.cells[cellIndex]
+        const currentCell = row.cells[cellIndex]!
         newCells[cellIndex] = {
           ...currentCell,
           ...updates
-        }
+        } as typeof currentCell
       } else {
         // 基础类型：更新 value
-        newCells[cellIndex] = { ...row.cells[cellIndex], value: value as string | boolean | number }
+        newCells[cellIndex] = { ...row.cells[cellIndex], value: value as string | boolean | number } as typeof row.cells[number]
       }
 
       return { ...row, cells: newCells }

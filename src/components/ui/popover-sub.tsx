@@ -117,7 +117,7 @@ function PopoverSubContent({ className, sideOffset = 4, align = "start", ...prop
         side="right"
         className={cn(
           popoverSubContentVariants(),
-          config.rounded === "rounded" ? "rounded-md" : config.rounded === "rounded-[10px]" ? "rounded-xl" : "rounded-lg",
+          config.rounded === "rounded" ? "rounded-md" : (config.rounded as string) === "rounded-[10px]" ? "rounded-xl" : "rounded-lg",
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className
         )}

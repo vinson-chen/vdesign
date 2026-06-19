@@ -6,10 +6,12 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "emitDeclarationOnly": false,
+    "declaration": false,
     "jsx": "react-jsx",
     "strict": true,
     "noUnusedLocals": true,
@@ -21,5 +23,15 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.css"]
+  "include": [
+    "src/components/**/*.ts",
+    "src/components/**/*.tsx",
+    "src/hooks/**/*.ts",
+    "src/hooks/**/*.tsx",
+    "src/lib/**/*.ts",
+    "src/types/**/*.ts",
+    "src/index.ts",
+    "src/styles.css"
+  ],
+  "exclude": ["src/demo/**/*"]
 }

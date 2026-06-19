@@ -31,7 +31,7 @@ function Select({ children, disabled, variant, size = "base", ...props }: React.
   const isDisabled = disabled || variant === "disabled"
   return (
     <SelectContext.Provider value={{ size }}>
-      <SelectPrimitive.Root disabled={isDisabled} modal={false} {...props}>
+      <SelectPrimitive.Root disabled={isDisabled} {...props}>
         {children}
       </SelectPrimitive.Root>
     </SelectContext.Provider>

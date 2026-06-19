@@ -1,4 +1,3 @@
-import * as React from "react"
 import { PopoverMenuItem } from "./popover"
 import { useTable } from "@/hooks"
 

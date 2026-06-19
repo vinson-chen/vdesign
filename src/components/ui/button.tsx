@@ -30,6 +30,10 @@ const buttonVariants = cva(
         true: "",
         false: "active:translate-y-px data-[state=open]:active:translate-y-0",
       },
+      disabled: {
+        true: "",
+        false: "",
+      },
     },
     compoundVariants: [
       // primary / outline / destructive disabled: gray bg + gray border

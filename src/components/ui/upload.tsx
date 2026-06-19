@@ -239,7 +239,7 @@ function Upload({
             <UploadThumbnail
               key={`${file.name}-${file.size}-${index}`}
               file={file}
-              size={size}
+              size={size ?? undefined}
               onChange={(newFile) => handleFileChange(newFile, index)}
               onRemove={() => handleFileRemove(index)}
             />
