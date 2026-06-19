@@ -584,7 +584,8 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
               ) : (
                 <TruncatedText
                   className={cn(
-                    "text-sm cursor-pointer truncate",
+                    "text-sm truncate",
+                    !state.readOnly && "cursor-pointer",
                     groupValue ? "font-medium text-black-85" : "font-normal text-black-25"
                   )}
                   onDoubleClick={state.readOnly ? undefined : () => actions.startEdit(cellId, groupValue)}
@@ -1415,7 +1416,7 @@ function DataTableInner({
           />
         </div>
       </div>
-      <div className={groupedData ? "pb-3" : undefined}>
+      <div className={(groupedData || state.readOnly) ? "pb-3" : undefined}>
         {groupedData ? (
           // 分组渲染（每组序号独立计算）
           groupedData.map((group, groupIndex) => {

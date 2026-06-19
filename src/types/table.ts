@@ -14,6 +14,7 @@ export type CellType =
   | 'attachment'
   | 'icon'
   | 'select'
+  | 'reference'
 
 // 单元格渲染器 Props 接口
 export interface CellRendererProps {
@@ -178,6 +179,8 @@ export interface TableActions {
   moveColumnOrder: (sourceColumnId: string, targetColumnId: string, insertPosition: 'left' | 'right') => void
   // 行列数操作
   setDimension: (targetRowCount: number, targetColumnCount: number) => void
+  // 编辑/只读模式切换
+  toggleReadOnly: () => void
 }
 
 // 表格 Context 类型

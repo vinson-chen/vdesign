@@ -78,10 +78,11 @@ const sizeConfigs = ["base", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 100 },
     ...sides.map((s) => ({
       id: s.id,
-      type: "tooltipCell" as const,
+      type: "reference" as const,
       title: s.label,
       width: 140,
     })),
@@ -90,6 +91,7 @@ function generateTableData(): TableData {
   const rows = sizeConfigs.map((size) => ({
     id: `row-${size}`,
     cells: [
+      { id: `cb-${size}`, value: false },
       { id: `c-size-${size}`, value: size },
       ...sides.map((s) => ({
         id: `c-${s.id}-${size}`,

@@ -18,7 +18,8 @@ import {
 import { PopoverEditContent } from "@/components/ui/popover-edit-content"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import type { SlotConfig } from "./shared"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 // ============================================
@@ -28,11 +29,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 function ontoName(slot: string, size: string): string {
   return ["popover", slot, size].join("-")
 }
-
-function getDisplaySize(size: string): string {
-  return size.toLowerCase()
-}
-
 // ============================================
 // 自定义单元格渲染器
 // ============================================
@@ -491,16 +487,11 @@ function PopoverEditRenderer({ value, options }: CellRendererProps) {
 // 表格数据生成
 // ============================================
 
-interface SlotConfig {
-  name: string
-  renderer: string
-  props: Record<string, unknown>
-}
 
 const slotConfigs: SlotConfig[] = [
   { name: "basic", renderer: "popoverBasic", props: {} },
   { name: "icon", renderer: "popoverIcon", props: {} },
-  { name: "checkbox", renderer: "popoverCheckbox", props: {} },
+  { name: "popoverCheckbox", renderer: "popoverCheckbox", props: {} },
   { name: "radio", renderer: "popoverRadio", props: {} },
   { name: "submenu", renderer: "popoverSubmenu", props: {} },
   { name: "combined", renderer: "popoverCombined", props: {} },
@@ -511,14 +502,15 @@ const sizeConfigs = ["base", "sm", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "basic", type: "popoverBasic" as const, title: "基础", width: 200 },
-    { id: "icon", type: "popoverIcon" as const, title: "带图标", width: 200 },
-    { id: "checkbox", type: "popoverCheckbox" as const, title: "多选", width: 200 },
-    { id: "radio", type: "popoverRadio" as const, title: "单选", width: 200 },
-    { id: "submenu", type: "popoverSubmenu" as const, title: "子菜单", width: 200 },
-    { id: "combined", type: "popoverCombined" as const, title: "组合", width: 200 },
-    { id: "edit", type: "popoverEdit" as const, title: "编辑", width: 200 },
+    { id: "basic", type: "reference" as const, title: "基础", width: 200 },
+    { id: "icon", type: "reference" as const, title: "带图标", width: 200 },
+    { id: "popoverCheckbox", type: "reference" as const, title: "多选", width: 200 },
+    { id: "radio", type: "reference" as const, title: "单选", width: 200 },
+    { id: "submenu", type: "reference" as const, title: "子菜单", width: 200 },
+    { id: "combined", type: "reference" as const, title: "组合", width: 200 },
+    { id: "edit", type: "reference" as const, title: "编辑", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -526,6 +518,7 @@ function generateTableData(): TableData {
     return {
       id: `row-${size}`,
       cells: [
+        { id: `cb-${size}`, value: false },
         { id: `c-size-${size}`, value: displaySize },
         ...slotConfigs.map((slot) => ({
           id: `c-${slot.name}-${size}`,

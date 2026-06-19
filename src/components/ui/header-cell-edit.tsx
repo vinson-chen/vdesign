@@ -98,6 +98,7 @@ function HeaderCellEditView({
               { value: "select", label: "选择列" },
               { value: "button", label: "链接列" },
               { value: "attachment", label: "附件列" },
+              { value: "reference", label: "引用列" },
             ],
           },
           // 只有单选列才显示选项内容配置

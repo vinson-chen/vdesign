@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import type { SlotConfig } from "./shared"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 // ============================================
@@ -14,10 +15,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 function ontoName(variant: string, size: string): string {
   const sizeParts = size.replace(/([A-Z])/g, "-$1").toLowerCase().split("-").filter(Boolean)
   return ["input", variant, ...sizeParts].join("-")
-}
-
-function getDisplaySize(size: string): string {
-  return size.toLowerCase()
 }
 
 // ============================================
@@ -87,11 +84,6 @@ interface VariantConfig {
   name: "basic" | "invalid" | "disabled"
 }
 
-interface SlotConfig {
-  name: string
-  props: Record<string, unknown>
-}
-
 const variantConfigs: VariantConfig[] = [
   { name: "basic" },
   { name: "invalid" },
@@ -110,13 +102,13 @@ const sizeConfigs = ["base", "sm", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
-    { id: "checkbox", type: "checkbox" as const, width: 200 },
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "basic", type: "input" as const, title: "basic", width: 200 },
-    { id: "iconLeft", type: "input" as const, title: "iconLeft", width: 200 },
-    { id: "iconRight", type: "input" as const, title: "iconRight", width: 200 },
-    { id: "invalid", type: "input" as const, title: "invalid", width: 200 },
-    { id: "disabled", type: "input" as const, title: "disabled", width: 200 },
+    { id: "basic", type: "reference" as const, title: "basic", width: 200 },
+    { id: "iconLeft", type: "reference" as const, title: "iconLeft", width: 200 },
+    { id: "iconRight", type: "reference" as const, title: "iconRight", width: 200 },
+    { id: "invalid", type: "reference" as const, title: "invalid", width: 200 },
+    { id: "disabled", type: "reference" as const, title: "disabled", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -140,8 +132,8 @@ function generateTableData(): TableData {
     }
   })
 
-  // 初始隐藏多选列，按"尺寸"分组
-  return { columns, rows, hiddenColumns: new Set(["checkbox"]), groupColumnId: "size" }
+  // 按"尺寸"分组
+  return { columns, rows, groupColumnId: "size" }
 }
 
 // ============================================

@@ -103,6 +103,18 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
   // 选中列
   const [selectedColumnId, setSelectedColumnId] = React.useState<string | null>(null)
 
+  // 只读模式（内部可切换，prop 仅作为初始值）
+  const [isReadOnly, setIsReadOnly] = React.useState(readOnly ?? false)
+
+  // 切到只读模式时清理编辑态
+  React.useEffect(() => {
+    if (isReadOnly) {
+      setEditingCellId(null)
+      setEditingValue("")
+      setLockedCellId(null)
+    }
+  }, [isReadOnly])
+
   // 锁定状态（焦点单元格）
   const [lockedCellId, setLockedCellId] = React.useState<string | null>(null)
 
@@ -404,7 +416,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     groupColumnId,
     collapsedGroups,
     selectedColumnId,
-    readOnly,
+    readOnly: isReadOnly,
   }
 
   // 切换分组展开/收起
@@ -670,6 +682,11 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     }
   }, [columns, rows])
 
+  // 编辑/只读模式切换
+  const toggleReadOnly = React.useCallback(() => {
+    setIsReadOnly((prev) => !prev)
+  }, [])
+
   const actions: TableActions = {
     toggleSelectAll,
     toggleRowSelect,
@@ -699,6 +716,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     selectColumn,
     moveColumnOrder,
     setDimension,
+    toggleReadOnly,
   }
 
   // Memo 化：过滤隐藏列后的数据

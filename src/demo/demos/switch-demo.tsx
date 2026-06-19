@@ -5,7 +5,8 @@ import { Switch } from "@/components/ui/switch"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import type { SlotConfig } from "./shared"
 
 // ============================================
 // 本体论命名工具
@@ -14,11 +15,6 @@ import { SectionTitle, DemoTableWrapper } from "./shared"
 function ontoName(slot: string, size: string): string {
   return ["switch", slot, size].join("-")
 }
-
-function getDisplaySize(size: string): string {
-  return size.toLowerCase()
-}
-
 // ============================================
 // 自定义单元格渲染器
 // ============================================
@@ -72,11 +68,6 @@ function SwitchCellRenderer({ value, options }: CellRendererProps) {
 // 表格数据生成
 // ============================================
 
-interface SlotConfig {
-  name: string
-  renderer: string
-  props: Record<string, unknown>
-}
 
 const slotConfigs: SlotConfig[] = [
   { name: "unchecked", renderer: "switchCell", props: { checked: false } },
@@ -89,11 +80,12 @@ const sizeConfigs = ["base", "sm", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "unchecked", type: "switchCell" as const, title: "unchecked", width: 200 },
-    { id: "checked", type: "switchCell" as const, title: "checked", width: 200 },
-    { id: "disabledUnchecked", type: "switchCell" as const, title: "disabled unchecked", width: 200 },
-    { id: "disabledChecked", type: "switchCell" as const, title: "disabled checked", width: 200 },
+    { id: "unchecked", type: "reference" as const, title: "unchecked", width: 200 },
+    { id: "checked", type: "reference" as const, title: "checked", width: 200 },
+    { id: "disabledUnchecked", type: "reference" as const, title: "disabled unchecked", width: 200 },
+    { id: "disabledChecked", type: "reference" as const, title: "disabled checked", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -101,6 +93,7 @@ function generateTableData(): TableData {
     return {
       id: `row-${size}`,
       cells: [
+        { id: `cb-${size}`, value: false },
         { id: `c-size-${size}`, value: displaySize },
         ...slotConfigs.map((slot) => ({
           id: `c-${slot.name}-${size}`,

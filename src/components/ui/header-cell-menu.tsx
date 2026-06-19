@@ -1,5 +1,6 @@
 import * as React from "react"
 import { PopoverMenuItem, PopoverSeparator } from "./popover"
+import { PopoverContext } from "./popover-shared"
 import { useTable } from "@/hooks"
 
 function HeaderCellMenuView({
@@ -20,6 +21,7 @@ function HeaderCellMenuView({
   onDimension: () => void
 }) {
   const { actions } = useTable()
+  const { close } = React.useContext(PopoverContext)
 
   // readOnly 模式：隐藏编辑列、插入列、行列数管理、删除列
   // 编辑模式：显示全部菜单项
@@ -65,6 +67,15 @@ function HeaderCellMenuView({
         <PopoverMenuItem size="base" onClick={onDimension}>
           <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-grid-view" /></svg>
           <span className="text-sm text-black-85">行列数管理</span>
+        </PopoverMenuItem>
+      )}
+      {isFirstDataColumn && (
+        <PopoverMenuItem size="base" onClick={() => {
+          close()
+          setTimeout(() => actions.toggleReadOnly(), 250)
+        }}>
+          <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref={readOnly ? "#icon-book-open" : "#icon-book-open-filled"} /></svg>
+          <span className="text-sm text-black-85">{readOnly ? "编辑模式" : "只读模式"}</span>
         </PopoverMenuItem>
       )}
       {!isFirstDataColumn && (

@@ -29,7 +29,8 @@ import {
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import type { SlotConfig } from "./shared"
 
 // ============================================
 // 本体论命名工具
@@ -38,11 +39,6 @@ import { SectionTitle, DemoTableWrapper } from "./shared"
 function ontoName(slot: string, size: string): string {
   return ["dialog", slot, size].join("-")
 }
-
-function getDisplaySize(size: string): string {
-  return size.toLowerCase()
-}
-
 // ============================================
 // 自定义单元格渲染器
 // ============================================
@@ -197,11 +193,6 @@ function DrawerCellRenderer({ value, options }: CellRendererProps) {
 // 表格数据生成
 // ============================================
 
-interface SlotConfig {
-  name: string
-  renderer: string
-  props: Record<string, unknown>
-}
 
 const slotConfigs: SlotConfig[] = [
   { name: "dialog", renderer: "dialogCell", props: {} },
@@ -212,9 +203,10 @@ const sizeConfigs = ["base", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "dialog", type: "dialogCell" as const, title: "弹窗 Dialog", width: 200 },
-    { id: "drawer", type: "drawerCell" as const, title: "抽屉 Drawer", width: 200 },
+    { id: "dialog", type: "reference" as const, title: "弹窗 Dialog", width: 200 },
+    { id: "drawer", type: "reference" as const, title: "抽屉 Drawer", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -222,6 +214,7 @@ function generateTableData(): TableData {
     return {
       id: `row-${size}`,
       cells: [
+        { id: `cb-${size}`, value: false },
         { id: `c-size-${size}`, value: displaySize },
         ...slotConfigs.map((slot) => ({
           id: `c-${slot.name}-${size}`,

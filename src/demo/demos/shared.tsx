@@ -14,6 +14,25 @@ import {
 import type { ColorScaleConfig } from "@/lib/color-scale"
 
 // ============================================
+// 公共工具函数 & 类型
+// ============================================
+
+// 尺寸显示名称
+function getDisplaySize(size: string): string {
+  return size.toLowerCase()
+}
+
+// 插槽配置（表格列生成用）
+interface SlotConfig {
+  name: string
+  renderer?: string
+  props: Record<string, unknown>
+}
+
+export { getDisplaySize }
+export type { SlotConfig }
+
+// ============================================
 // 公共 Demo 组件
 // ============================================
 

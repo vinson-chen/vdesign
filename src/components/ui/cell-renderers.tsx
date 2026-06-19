@@ -90,7 +90,7 @@ function TextCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdat
 
   return (
     <TruncatedText
-      className="flex-1 w-full min-h-6 cursor-pointer truncate"
+      className={cn("flex-1 w-full min-h-6 truncate", !readOnly && "cursor-pointer")}
       onDoubleClick={readOnly ? undefined : () => onStartEdit?.()}
     >
       {String(value) || " "}
@@ -127,7 +127,7 @@ function NumberCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpd
 
   return (
     <TruncatedText
-      className="flex-1 w-full min-h-6 cursor-pointer truncate text-right"
+      className={cn("flex-1 w-full min-h-6 truncate text-right", !readOnly && "cursor-pointer")}
       onDoubleClick={readOnly ? undefined : () => onStartEdit?.()}
     >
       {String(value) || " "}
@@ -279,8 +279,8 @@ function SelectEditableCellRenderer({
     setOpen(true)
   }
 
-  // 锁定态或悬停态时显示箭头按钮
-  const showArrowButton = isLocked || isCellHovering
+  // 锁定态或悬停态时显示箭头按钮（只读模式隐藏）
+  const showArrowButton = !readOnly && (isLocked || isCellHovering)
 
   return (
     <Popover open={open} onOpenChange={(newOpen) => {
@@ -291,7 +291,8 @@ function SelectEditableCellRenderer({
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <TruncatedText
           className={cn(
-            "flex-1 min-h-6 cursor-pointer truncate",
+            "flex-1 min-h-6 truncate",
+            !readOnly && "cursor-pointer",
             !selectedLabel && "text-black-25"
           )}
           onClick={handleTextClick}
@@ -378,7 +379,7 @@ function SelectEditableCellRenderer({
 }
 
 // 按钮单元格渲染器（每个单元格支持1个按钮）
-function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLockCell }: CellRendererProps) {
+function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLockCell, readOnly }: CellRendererProps) {
   const buttonConfig = cellData?.buttonConfig as ButtonCellConfig | undefined
   const [open, setOpen] = React.useState(false)
 
@@ -422,8 +423,8 @@ function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLo
     setOpen(true)
   }
 
-  // 锁定态或悬停态时显示link按钮
-  const showLinkButton = isLocked || isCellHovering
+  // 锁定态或悬停态时显示link按钮（只读模式隐藏）
+  const showLinkButton = !readOnly && (isLocked || isCellHovering)
 
   // 判断是否有按钮配置（名称或超链接不为空）
   const hasButtonConfig = buttonConfig?.label?.trim() || buttonConfig?.url?.trim()
@@ -690,9 +691,10 @@ function AttachmentThumbnail({ file, isLocked, isPreviewOpen, onPreview, onRemov
 }
 
 // 附件单元格渲染器
-function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }: CellRendererProps) {
+function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange, readOnly }: CellRendererProps) {
   // 附件数据存储在 cellData.attachmentFiles 中
-  const files = (cellData?.attachmentFiles as File[]) ?? []
+  // 不在此处用 ?? [] 兜底，避免每帧创建新空数组引用导致 useEffect 死循环
+  const files = cellData?.attachmentFiles as File[] | undefined
   const inputRef = React.useRef<HTMLInputElement>(null)
   const containerRef = React.useRef<HTMLDivElement>(null)
 
@@ -700,8 +702,11 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }
   const [previewIndex, setPreviewIndex] = React.useState<number | null>(null)
   const [previewUrls, setPreviewUrls] = React.useState<string[]>([])
 
+  const fileList = files ?? []
+  const fileCount = fileList.length
+
   // 动态计算可容纳的缩略图数量
-  const [visibleCount, setVisibleCount] = React.useState(files.length)
+  const [visibleCount, setVisibleCount] = React.useState(fileCount)
 
   React.useEffect(() => {
     const container = containerRef.current
@@ -723,15 +728,15 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }
     const observer = new ResizeObserver(calculateVisibleCount)
     observer.observe(container)
     return () => observer.disconnect()
-  }, [files.length])
+  }, [fileCount])
 
   // 判断是否需要显示 "+N"（附件数量超出可容纳数量）
-  const showOverflow = files.length > visibleCount
-  const overflowCount = files.length - visibleCount
+  const showOverflow = fileCount > visibleCount
+  const overflowCount = fileCount - visibleCount
 
-  // 生成预览 URL
+  // 生成预览 URL — 用 files（可能是 undefined）做依赖，undefined 引用稳定，避免死循环
   React.useEffect(() => {
-    const urls = files.map(file => URL.createObjectURL(file))
+    const urls = fileList.map(file => URL.createObjectURL(file))
     setPreviewUrls(urls)
     return () => urls.forEach(url => URL.revokeObjectURL(url))
   }, [files])
@@ -749,14 +754,14 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || [])
     if (newFiles.length > 0) {
-      handleUpdateFiles([...files, ...newFiles])
+      handleUpdateFiles([...fileList, ...newFiles])
     }
     e.target.value = ""
   }
 
   // 删除文件
   const handleRemove = (index: number) => {
-    const newFiles = files.filter((_, i) => i !== index)
+    const newFiles = fileList.filter((_, i) => i !== index)
     handleUpdateFiles(newFiles)
     // 如果删除的是正在预览的文件，关闭预览
     if (previewIndex === index) {
@@ -776,7 +781,7 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }
   }
 
   const handleNext = () => {
-    if (previewIndex !== null && previewIndex < files.length - 1) {
+    if (previewIndex !== null && previewIndex < fileCount - 1) {
       setPreviewIndex(previewIndex + 1)
     }
   }
@@ -797,16 +802,16 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [previewIndex])
 
-  // 锁定态或悬停态时显示上传按钮
-  const showUploadButton = isLocked || isCellHovering
+  // 锁定态或悬停态时显示上传按钮（只读模式隐藏）
+  const showUploadButton = !readOnly && (isLocked || isCellHovering)
 
   return (
     <>
       <div ref={containerRef} className="flex items-center gap-2 min-w-0 flex-1">
         {/* 文件缩略图列表（贴左） */}
-        {files.length > 0 && (
+        {fileCount > 0 && (
           <div className="flex items-center gap-2 min-w-0 shrink">
-            {files.slice(0, visibleCount).map((file, index) => (
+            {fileList.slice(0, visibleCount).map((file, index) => (
               <div key={`${file.name}-${file.size}-${index}`} className="relative shrink-0">
                 <AttachmentThumbnail
                   file={file}
@@ -868,9 +873,9 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }
             />
 
             {/* 当前预览内容 */}
-            {files[previewIndex]?.type.startsWith("image/") ? (
-              <img src={previewUrls[previewIndex]} alt={files[previewIndex].name} className="max-w-[calc(95vw-96px)] max-h-[calc(95vh-96px)] object-contain" />
-            ) : files[previewIndex]?.type.startsWith("video/") ? (
+            {fileList[previewIndex]?.type.startsWith("image/") ? (
+              <img src={previewUrls[previewIndex]} alt={fileList[previewIndex].name} className="max-w-[calc(95vw-96px)] max-h-[calc(95vh-96px)] object-contain" />
+            ) : fileList[previewIndex]?.type.startsWith("video/") ? (
               <video src={previewUrls[previewIndex]} controls className="max-w-[calc(95vw-96px)] max-h-[calc(95vh-96px)]" />
             ) : null}
 
@@ -879,14 +884,14 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange }
               variant="ghost"
               size="iconLg"
               leftIcon="icon-arrow-right"
-              disabled={previewIndex === files.length - 1}
+              disabled={previewIndex === fileCount - 1}
               className="absolute right-2 top-1/2 -mt-5 bg-black-55 text-white-100 hover:bg-black-85 active:bg-black-85 z-10 disabled:bg-black-5 disabled:text-white-60 disabled:cursor-not-allowed disabled:hover:bg-black-5 disabled:hover:text-white-60"
               onClick={handleNext}
             />
 
             {/* 计数指示器 */}
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-1 rounded-full bg-black/50 text-white text-sm z-10">
-              {previewIndex + 1}/{files.length}
+              {previewIndex + 1}/{fileCount}
             </div>
           </DialogContent>
         </Dialog>

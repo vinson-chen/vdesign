@@ -110,10 +110,11 @@ const sizeConfigs = ["base", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 100 },
     ...toastTypes.map((t) => ({
       id: t.id,
-      type: "toastCell" as const,
+      type: "reference" as const,
       title: t.label,
       width: 200,
     })),
@@ -122,6 +123,7 @@ function generateTableData(): TableData {
   const rows = sizeConfigs.map((size) => ({
     id: `row-${size}`,
     cells: [
+      { id: `cb-${size}`, value: false },
       { id: `c-size-${size}`, value: size },
       ...toastTypes.map((t) => ({
         id: `c-${t.id}-${size}`,

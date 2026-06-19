@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import type { SlotConfig } from "./shared"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 // ============================================
@@ -14,11 +15,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 function ontoName(slot: string, size: string): string {
   return ["checkbox", slot, size].join("-")
 }
-
-function getDisplaySize(size: string): string {
-  return size.toLowerCase()
-}
-
 // ============================================
 // 自定义单元格渲染器
 // ============================================
@@ -169,11 +165,6 @@ function CheckboxVerticalGroupRenderer({ value, options }: CellRendererProps) {
 // 表格数据生成
 // ============================================
 
-interface SlotConfig {
-  name: string
-  renderer: string
-  props: Record<string, unknown>
-}
 
 const slotConfigs: SlotConfig[] = [
   { name: "horizontal", renderer: "checkboxHorizontalGroup", props: {} },
@@ -184,9 +175,10 @@ const sizeConfigs = ["base", "sm", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "horizontal", type: "checkboxHorizontalGroup" as const, title: "横向组合", width: 350 },
-    { id: "vertical", type: "checkboxVerticalGroup" as const, title: "纵向组合", width: 200 },
+    { id: "horizontal", type: "reference" as const, title: "横向组合", width: 350 },
+    { id: "vertical", type: "reference" as const, title: "纵向组合", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -194,6 +186,7 @@ function generateTableData(): TableData {
     return {
       id: `row-${size}`,
       cells: [
+        { id: `cb-${size}`, value: false },
         { id: `c-size-${size}`, value: displaySize },
         ...slotConfigs.map((slot) => ({
           id: `c-${slot.name}-${size}`,

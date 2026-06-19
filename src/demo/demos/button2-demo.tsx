@@ -104,13 +104,13 @@ const variantConfigs: VariantConfig[] = [
 
 function generateTableData(): TableData {
   const columns = [
-    { id: "checkbox", type: "checkbox" as const, width: 200 },
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "text", type: "button" as const, title: "text", width: 200 },
-    { id: "leftIcon", type: "button" as const, title: "leftIcon", width: 200 },
-    { id: "rightIcon", type: "button" as const, title: "rightIcon", width: 200 },
-    { id: "icon", type: "button" as const, title: "icon", width: 200 },
-    { id: "disabled", type: "button" as const, title: "disabled", width: 200 },
+    { id: "text", type: "reference" as const, title: "text", width: 200 },
+    { id: "leftIcon", type: "reference" as const, title: "leftIcon", width: 200 },
+    { id: "rightIcon", type: "reference" as const, title: "rightIcon", width: 200 },
+    { id: "icon", type: "reference" as const, title: "icon", width: 200 },
+    { id: "disabled", type: "reference" as const, title: "disabled", width: 200 },
   ]
 
   const rows = variantConfigs.flatMap((v) =>
@@ -160,8 +160,8 @@ function generateTableData(): TableData {
     })
   )
 
-  // 初始隐藏多选列，模拟无 checkbox 列的表格；按"尺寸"分组
-  return { columns, rows, hiddenColumns: new Set(["checkbox"]), groupColumnId: "size" }
+  // 按"尺寸"分组
+  return { columns, rows, groupColumnId: "size" }
 }
 
 // ============================================

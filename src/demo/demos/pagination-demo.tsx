@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/pagination"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import type { SlotConfig } from "./shared"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 // ============================================
@@ -19,11 +20,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 function ontoName(slot: string, size: string): string {
   return ["pagination", slot, size].join("-")
 }
-
-function getDisplaySize(size: string): string {
-  return size.toLowerCase()
-}
-
 // ============================================
 // 自定义单元格渲染器
 // ============================================
@@ -81,11 +77,6 @@ function PaginationCompactRenderer({ value, options }: CellRendererProps) {
 // 表格数据生成
 // ============================================
 
-interface SlotConfig {
-  name: string
-  renderer: string
-  props: Record<string, unknown>
-}
 
 const slotConfigs: SlotConfig[] = [
   { name: "compact", renderer: "paginationCompact", props: {} },
@@ -95,8 +86,9 @@ const sizeConfigs = ["base", "sm", "lg"] as const
 
 function generateTableData(): TableData {
   const columns = [
+    { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "compact", type: "paginationCompact" as const, title: "精简", width: 300 },
+    { id: "compact", type: "reference" as const, title: "精简", width: 300 },
   ]
 
   const rows = sizeConfigs.map((size) => {
@@ -104,6 +96,7 @@ function generateTableData(): TableData {
     return {
       id: `row-${size}`,
       cells: [
+        { id: `cb-${size}`, value: false },
         { id: `c-size-${size}`, value: displaySize },
         ...slotConfigs.map((slot) => ({
           id: `c-${slot.name}-${size}`,
