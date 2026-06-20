@@ -11338,10 +11338,16 @@ const sl = Se("flex flex-col relative", {
     variant: {
       base: "border border-neutral-2 bg-white-100",
       plain: ""
+    },
+    radius: {
+      none: "rounded-none",
+      sm: "rounded-md",
+      base: "rounded-lg"
     }
   },
   defaultVariants: {
-    variant: "base"
+    variant: "base",
+    radius: "none"
   }
 });
 function il({ children: e, className: t, onDoubleClick: n }) {

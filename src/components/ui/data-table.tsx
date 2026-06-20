@@ -25,9 +25,15 @@ const tableVariants = cva("flex flex-col relative", {
       base: "border border-neutral-2 bg-white-100",
       plain: "",
     },
+    radius: {
+      none: "rounded-none",
+      sm: "rounded-md",
+      base: "rounded-lg",
+    },
   },
   defaultVariants: {
     variant: "base",
+    radius: "none",
   },
 })
 
