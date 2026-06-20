@@ -2,7 +2,6 @@ import * as React from "react"
 import { PopoverMenuItem } from "./popover"
 import { useTable } from "@/hooks"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
-import { cn } from "@/lib/utils"
 
 function HeaderCellHideManagerView({ firstDataColumnId }: {
   firstDataColumnId: string | undefined
