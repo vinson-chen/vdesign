@@ -17,7 +17,7 @@ import { HeaderCellEditView } from "./header-cell-edit"
 import { HeaderCellHideManagerView } from "./header-cell-hide-manager"
 import { HeaderCellDimensionView } from "./header-cell-dimension"
 import { TextCellRenderer } from "./cell-renderers"
-import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "./tooltip"
 
 const tableVariants = cva("flex flex-col relative", {
   variants: {
@@ -687,13 +687,15 @@ function DataTable({ className, variant, radius, data, cellRenderers, readOnly, 
   )
   return (
     <TableProvider data={data} cellRenderers={cellRenderers} readOnly={readOnly}>
-      {contained ? (
-        <div className={cn("min-h-0 overflow-auto overscroll-none w-fit max-w-full", wrapperClass)}>
-          {inner}
-        </div>
-      ) : (
-        inner
-      )}
+      <TooltipProvider>
+        {contained ? (
+          <div className={cn("min-h-0 overflow-auto overscroll-none w-fit max-w-full", wrapperClass)}>
+            {inner}
+          </div>
+        ) : (
+          inner
+        )}
+      </TooltipProvider>
     </TableProvider>
   )
 }
