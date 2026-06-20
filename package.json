@@ -23,7 +23,7 @@
     "build:styles": "vite build --config vite.styles.config.ts",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,css}\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit --project tsconfig.emit.json",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -64,6 +64,20 @@ export { Component, componentVariants }
 
 **DataTable 自包含 TooltipProvider**：DataTable 内部已包裹 `<TooltipProvider>`，消费者无需额外提供。但如果页面中 DataTable 之外还有独立的 Tooltip 使用（如页面级别的 tooltip 按钮），则仍需要在外层包裹 `<TooltipProvider>`。
 
+## 提交前检查清单
+
+每次提交代码前必须执行：
+
+```bash
+npm run typecheck  # 检查 TypeScript 类型错误、未使用导入等（与 build 使用同一 tsconfig.emit.json）
+```
+
+`tsconfig.app.json` 启用了 `noUnusedLocals` / `noUnusedParameters` 等严格检查，`dev`（Vite）不跑类型检查，只有 `typecheck` 和 `build` 会触发。若 CI 或消费者 build 时报 TS6133 等错误，说明提交前未执行 `npm run typecheck`。
+
+### 新增 Tooltip 等依赖组件时
+- 只导入实际使用的组件，检查是否有顺手导入但未用的模块（如 `cn`）
+- 验证目标组件树是否已在 TooltipProvider 范围内
+
 ## Demo 页面布局规范
 
 每个页面由多个 section 组成，遵循以下间距规则：
