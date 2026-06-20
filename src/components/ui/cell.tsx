@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cellVariants = cva(
-  "relative flex items-stretch overflow-hidden transition-colors",
+  "relative flex items-stretch overflow-hidden transition-colors select-none",
   {
     variants: {
       variant: {
