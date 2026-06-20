@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build --config vite.build.config.ts && cp src/styles.css dist/styles.css",
+    "build": "vite build --config vite.build.config.ts && tsc --project tsconfig.emit.json && cp src/styles.css dist/styles.css",
     "prepare": "npm run build",
     "build:demo": "vite build --outDir dist-demo",
     "build:styles": "vite build --config vite.styles.config.ts",
