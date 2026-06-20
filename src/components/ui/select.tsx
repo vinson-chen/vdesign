@@ -38,13 +38,15 @@ function Select({ children, disabled, variant, size = "base", ...props }: React.
   )
 }
 
-function SelectTrigger({ className, variant, leftIcon, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Trigger> & VariantProps<typeof selectTriggerVariants> & { leftIcon?: string }) {
+function SelectTrigger({ className, variant, leftIcon, children, slotId, ...props }: React.ComponentProps<typeof SelectPrimitive.Trigger> & VariantProps<typeof selectTriggerVariants> & { leftIcon?: string, slotId?: string }) {
   const { size } = React.useContext(SelectContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
+      data-slot-id={slotId ?? id}
       className={cn(selectTriggerVariants({ variant }), config.height, config.rounded, config.px, config.gap, config.text, className)}
       {...props}
     >
@@ -65,13 +67,15 @@ function SelectTrigger({ className, variant, leftIcon, children, ...props }: Rea
   )
 }
 
-function SelectContent({ className, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+function SelectContent({ className, children, slotId, ...props }: React.ComponentProps<typeof SelectPrimitive.Content> & { slotId?: string }) {
   const { size } = React.useContext(SelectContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <SelectPrimitive.Content
       data-slot="select-content"
+      data-slot-id={slotId ?? id}
       position="popper"
       sideOffset={4}
       className={cn(
@@ -90,13 +94,15 @@ function SelectContent({ className, children, ...props }: React.ComponentProps<t
   )
 }
 
-function SelectItem({ className, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Item>) {
+function SelectItem({ className, children, slotId, ...props }: React.ComponentProps<typeof SelectPrimitive.Item> & { slotId?: string }) {
   const { size } = React.useContext(SelectContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      data-slot-id={slotId ?? id}
       className={cn(
         "relative flex cursor-pointer select-none items-center outline-none transition-all",
         "text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2",
@@ -115,8 +121,9 @@ function SelectItem({ className, children, ...props }: React.ComponentProps<type
   )
 }
 
-function SelectValue({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Value>) {
-  return <SelectPrimitive.Value data-slot="select-value" className={className} {...props} />
+function SelectValue({ className, slotId, ...props }: React.ComponentProps<typeof SelectPrimitive.Value> & { slotId?: string }) {
+  const id = React.useId()
+  return <SelectPrimitive.Value data-slot="select-value" data-slot-id={slotId ?? id} className={className} {...props} />
 }
 
 export { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, selectTriggerVariants, SelectContext }

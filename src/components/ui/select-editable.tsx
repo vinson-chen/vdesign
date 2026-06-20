@@ -21,6 +21,7 @@ interface SelectEditableProps extends VariantProps<typeof selectTriggerVariants>
   disabled?: boolean
   size?: "sm" | "base" | "lg"
   className?: string
+  slotId?: string
 }
 
 function SelectEditable({
@@ -33,8 +34,10 @@ function SelectEditable({
   variant,
   size = "base",
   className,
+  slotId,
 }: SelectEditableProps) {
   const isDisabled = disabled || variant === "disabled"
+  const id = React.useId()
   const [searchKeyword, setSearchKeyword] = React.useState("")
   const [open, setOpen] = React.useState(false)
 
@@ -97,6 +100,7 @@ function SelectEditable({
       <PopoverTrigger asChild>
         <button
           data-slot="select-editable-trigger"
+          data-slot-id={slotId ?? id}
           className={cn(selectTriggerVariants({ variant }), config.height, config.rounded, config.px, config.gap, config.text, "w-full", className)}
           disabled={isDisabled}
           type="button"

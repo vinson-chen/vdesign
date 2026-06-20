@@ -371,6 +371,7 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow: 
   return (
     <div
       data-slot="row"
+      data-slot-id={row.id}
       className={cn(
         "flex border-b border-neutral-2",
         isSelected && "bg-brand-1"
@@ -415,6 +416,7 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow: 
         return (
           <Cell
             key={cell.id}
+            columnId={columnId}
             data-cell-id={!isHeader ? cell.id : undefined}
             width={width}
             variant={cellVariant}
@@ -537,6 +539,7 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
   return (
     <div
       data-slot="group-header"
+      data-slot-id={`group-${groupValue}`}
       className="flex border-y border-neutral-2 mt-3 bg-white-100"
       style={{ width: `${rowWidth}px` }}
     >
@@ -625,9 +628,11 @@ function InsertRow({ rowWidth, showBorder, isHovering, onHoverChange, onInsert, 
   isCheckboxHidden: boolean
 }) {
   const cellWidth = isCheckboxHidden ? frozenWidth - checkboxWidth : frozenWidth
+  const insertId = React.useId()
   return (
     <div
       data-slot="insert-row"
+      data-slot-id={insertId}
       className={cn(
         "flex bg-white-100 cursor-pointer",
         showBorder && "border-b border-neutral-2",
@@ -675,9 +680,11 @@ const HeaderPopoverOpenRefContext = React.createContext<React.MutableRefObject<b
 function DataTableInner({
   className,
   variant,
+  slotId,
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof tableVariants>) {
+}: React.ComponentProps<"div"> & VariantProps<typeof tableVariants> & { slotId?: string }) {
   const { data, state, actions } = useTable()
+  const id = React.useId()
 
   // 悬停列边缘状态
   const [hoveringColumnId, setHoveringColumnId] = React.useState<string | null>(null)
@@ -1388,6 +1395,7 @@ function DataTableInner({
       <div
         ref={tableRef}
         data-slot="data-table"
+        data-slot-id={slotId ?? id}
         data-resizing={resizingColumnId || draggingColumnId ? "true" : undefined}
         className={cn(
           tableVariants({ variant }),

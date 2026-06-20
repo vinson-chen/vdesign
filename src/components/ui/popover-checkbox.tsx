@@ -21,18 +21,22 @@ function PopoverCheckboxItem({
   disabled = false,
   onCheckedChange,
   children,
+  slotId,
   ...props
 }: Omit<React.ComponentProps<"div">, "onChange"> & {
   checked?: boolean
   disabled?: boolean
   onCheckedChange?: (checked: boolean) => void
+  slotId?: string
 }) {
   const { size } = React.useContext(PopoverContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <div
       data-slot="popover-checkbox-item"
+      data-slot-id={slotId ?? id}
       className={cn(
         "relative flex cursor-pointer select-none items-center outline-none transition-colors",
         "text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2",

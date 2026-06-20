@@ -24,12 +24,15 @@ const tableVariants = cva("flex w-max min-w-full flex-col bg-white-100", {
 interface TableProps extends React.ComponentProps<"div">, VariantProps<typeof tableVariants> {
   data?: TableData
   children?: React.ReactNode
+  slotId?: string
 }
 
-function Table({ className, variant, radius, data, children, ...props }: TableProps) {
+function Table({ className, variant, radius, data, children, slotId, ...props }: TableProps) {
+  const id = React.useId()
   return (
     <div
       data-slot="table"
+      data-slot-id={slotId ?? id}
       className={cn(tableVariants({ variant, radius, className }))}
       {...props}
     >

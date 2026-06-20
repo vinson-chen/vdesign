@@ -1,12 +1,16 @@
 import { Toaster as SonnerToaster, toast } from "sonner"
+import { useId } from "react"
 
 interface ToasterProps {
   position?: "top-center" | "top-left" | "top-right" | "bottom-center" | "bottom-left" | "bottom-right"
+  slotId?: string
 }
 
-function Toaster({ position = "top-center" }: ToasterProps) {
+function Toaster({ position = "top-center", slotId }: ToasterProps) {
+  const id = useId()
   return (
-    <SonnerToaster
+    <div data-slot="toaster" data-slot-id={slotId ?? id}>
+      <SonnerToaster
       position={position}
       className="vdesign-toaster"
       richColors
@@ -23,6 +27,7 @@ function Toaster({ position = "top-center" }: ToasterProps) {
         },
       }}
     />
+    </div>
   )
 }
 

@@ -79,14 +79,19 @@ function Button({
   leftIcon,
   rightIcon,
   children,
+  slotId,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     leftIcon?: string
     rightIcon?: string
+    slotId?: string
   }) {
+  const id = React.useId()
   return (
     <button
+      data-slot="button"
+      data-slot-id={slotId ?? id}
       disabled={disabled}
       className={cn(buttonVariants({ variant, size, noShift, disabled, className }))}
       {...props}

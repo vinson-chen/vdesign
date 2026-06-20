@@ -65,15 +65,17 @@ function PopoverSub({
   )
 }
 
-function PopoverSubTrigger({ className, children, ...props }: Omit<React.ComponentProps<"div">, "onChange">) {
+function PopoverSubTrigger({ className, children, slotId, ...props }: Omit<React.ComponentProps<"div">, "onChange"> & { slotId?: string }) {
   const { size } = React.useContext(PopoverContext)
   const { open, isOpen, scheduleClose } = React.useContext(PopoverSubContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <PopoverPrimitive.Trigger asChild>
       <div
         data-slot="popover-sub-trigger"
+        data-slot-id={slotId ?? id}
         data-state={isOpen ? "open" : "closed"}
         className={cn(
           "relative flex cursor-pointer select-none items-center outline-none transition-colors justify-between",
@@ -103,15 +105,17 @@ const popoverSubContentVariants = cva(
   "z-50 min-w-32 overflow-hidden border border-neutral-2 bg-white-100 shadow-[0_0_4px_1px_var(--black-5),0_8px_8px_0_var(--black-5)] p-1"
 )
 
-function PopoverSubContent({ className, sideOffset = 4, align = "start", ...props }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+function PopoverSubContent({ className, sideOffset = 4, align = "start", slotId, ...props }: React.ComponentProps<typeof PopoverPrimitive.Content> & { slotId?: string }) {
   const { size } = React.useContext(PopoverContext)
   const { scheduleClose, cancelClose } = React.useContext(PopoverSubContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
         data-slot="popover-sub-content"
+        data-slot-id={slotId ?? id}
         sideOffset={sideOffset}
         align={align}
         side="right"

@@ -45,9 +45,11 @@ interface UploadThumbnailProps {
   size?: "base" | "lg"
   onChange?: (file: File) => void
   onRemove?: () => void
+  slotId?: string
 }
 
-function UploadThumbnail({ file, size = "base", onChange, onRemove }: UploadThumbnailProps) {
+function UploadThumbnail({ file, size = "base", onChange, onRemove, slotId }: UploadThumbnailProps) {
+  const id = React.useId()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null)
   const [previewOpen, setPreviewOpen] = React.useState(false)
@@ -97,6 +99,7 @@ function UploadThumbnail({ file, size = "base", onChange, onRemove }: UploadThum
           {/* 缩略图容器 */}
           <div
             data-slot="upload-thumbnail"
+            data-slot-id={slotId ?? id}
             className={cn(
               "group relative shrink-0 rounded-lg overflow-hidden cursor-pointer bg-neutral-1 border border-neutral-2",
               thumbSize
@@ -170,6 +173,7 @@ interface UploadProps extends VariantProps<typeof uploadVariants> {
   onChange?: (file: File, index: number) => void
   onRemove?: (index: number) => void
   className?: string
+  slotId?: string
 }
 
 function Upload({
@@ -182,7 +186,9 @@ function Upload({
   onChange,
   onRemove,
   className,
+  slotId,
 }: UploadProps) {
+  const id = React.useId()
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   // 尺寸配置
@@ -211,7 +217,7 @@ function Upload({
   }
 
   return (
-    <div data-slot="upload" className={cn("flex items-center gap-2", className)}>
+    <div data-slot="upload" data-slot-id={slotId ?? id} className={cn("flex items-center gap-2", className)}>
       {/* 上传按钮 */}
       <Button
         variant="outline"

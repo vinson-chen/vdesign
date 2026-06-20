@@ -35,13 +35,16 @@ function TooltipContent({
   size,
   sideOffset = 4,
   children,
+  slotId,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content> &
-  VariantProps<typeof tooltipContentVariants>) {
+  VariantProps<typeof tooltipContentVariants> & { slotId?: string }) {
+  const id = React.useId()
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         data-slot="tooltip-content"
+        data-slot-id={slotId ?? id}
         sideOffset={sideOffset}
         className={cn(tooltipContentVariants({ size }), className)}
         {...props}
@@ -49,6 +52,7 @@ function TooltipContent({
         {children}
         <TooltipPrimitive.Arrow
           data-slot="tooltip-arrow"
+          data-slot-id={`${slotId ?? id}-arrow`}
           className="fill-black-85"
           width={size === "lg" ? 12 : 8}
           height={size === "lg" ? 6 : 4}

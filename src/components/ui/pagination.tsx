@@ -18,21 +18,24 @@ const paginationVariants = cva("flex items-center", {
   defaultVariants: { size: "base" },
 })
 
-function Pagination({ className, size = "base", ...props }: React.ComponentProps<"nav"> & VariantProps<typeof paginationVariants>) {
+function Pagination({ className, size = "base", slotId, ...props }: React.ComponentProps<"nav"> & VariantProps<typeof paginationVariants> & { slotId?: string }) {
+  const id = React.useId()
   return (
     <PaginationContext.Provider value={{ size: size! }}>
-      <nav data-slot="pagination" role="navigation" aria-label="pagination" className={cn(paginationVariants({ size: size! }), className)} {...props} />
+      <nav data-slot="pagination" data-slot-id={slotId ?? id} role="navigation" aria-label="pagination" className={cn(paginationVariants({ size: size! }), className)} {...props} />
     </PaginationContext.Provider>
   )
 }
 
-function PaginationButton({ className, disabled, children, ...props }: React.ComponentProps<"button">) {
+function PaginationButton({ className, disabled, children, slotId, ...props }: React.ComponentProps<"button"> & { slotId?: string }) {
   const { size } = React.useContext(PaginationContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <button
       data-slot="pagination-button"
+      data-slot-id={slotId ?? id}
       disabled={disabled}
       className={cn(
         "inline-flex items-center justify-center border border-transparent bg-clip-padding font-normal transition-all outline-none",
@@ -71,9 +74,10 @@ function PaginationNext({ className, disabled, onClick, ...props }: React.Compon
   )
 }
 
-function PaginationInfo({ className, page, totalPages, onPageChange }: React.ComponentProps<"div"> & { page: number; totalPages: number; onPageChange: (page: number) => void }) {
+function PaginationInfo({ className, page, totalPages, onPageChange, slotId, ...props }: React.ComponentProps<"div"> & { page: number; totalPages: number; onPageChange: (page: number) => void; slotId?: string }) {
   const { size } = React.useContext(PaginationContext)
   const config = sizeConfig[size]
+  const id = React.useId()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [inputValue, setInputValue] = React.useState(String(page))
 
@@ -97,7 +101,7 @@ function PaginationInfo({ className, page, totalPages, onPageChange }: React.Com
   }
 
   return (
-    <div data-slot="pagination-info" className={cn("flex items-center", config.gap, className)}>
+    <div data-slot="pagination-info" data-slot-id={slotId ?? id} className={cn("flex items-center", config.gap, className)}>
       <Input
         ref={inputRef}
         type="text"

@@ -21,6 +21,7 @@ function HeaderCellEditView({
 }) {
   const { actions } = useTable()
   const { close } = React.useContext(PopoverContext)
+  const id = React.useId()
 
   // 编辑状态
   const [editedTitle, setEditedTitle] = React.useState(String(value))
@@ -63,6 +64,7 @@ function HeaderCellEditView({
   return (
     <div
       data-slot="header-cell-edit"
+      data-slot-id={id}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault()

@@ -63,6 +63,7 @@ interface CheckboxProps extends Omit<
   size?: "sm" | "base" | "lg"
   onChange?: (checked: boolean) => void
   children?: React.ReactNode
+  slotId?: string
 }
 
 const gapMap = {
@@ -78,13 +79,16 @@ function Checkbox({
   size = "base",
   onChange,
   children,
+  slotId,
   ...props
 }: CheckboxProps) {
   const isDisabled = disabled
+  const id = React.useId()
 
   return (
     <div
       data-slot="checkbox"
+      data-slot-id={slotId ?? id}
       role="checkbox"
       aria-checked={checked}
       tabIndex={isDisabled ? undefined : 0}

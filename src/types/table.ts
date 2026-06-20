@@ -15,6 +15,7 @@ export type CellType =
   | 'icon'
   | 'input'
   | 'select'
+  | 'preview'
   | 'reference'
 
 // 单元格渲染器 Props 接口

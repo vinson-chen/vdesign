@@ -41,14 +41,16 @@ const popoverContentVariants = cva(
   "z-50 min-w-32 overflow-hidden border border-neutral-2 bg-white-100 shadow-[0_0_4px_1px_var(--black-5),0_8px_8px_0_var(--black-5)] p-1"
 )
 
-function PopoverContent({ className, sideOffset = 4, align = "start", ...props }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+function PopoverContent({ className, sideOffset = 4, align = "start", slotId, ...props }: React.ComponentProps<typeof PopoverPrimitive.Content> & { slotId?: string }) {
   const { size } = React.useContext(PopoverContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
         data-slot="popover-content"
+        data-slot-id={slotId ?? id}
         sideOffset={sideOffset}
         align={align}
         className={cn(
@@ -63,13 +65,15 @@ function PopoverContent({ className, sideOffset = 4, align = "start", ...props }
   )
 }
 
-function PopoverItem({ className, disabled: _disabled, ...props }: React.ComponentProps<"div"> & { disabled?: boolean }) {
+function PopoverItem({ className, disabled: _disabled, slotId, ...props }: React.ComponentProps<"div"> & { disabled?: boolean, slotId?: string }) {
   const { size } = React.useContext(PopoverContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <div
       data-slot="popover-item"
+      data-slot-id={slotId ?? id}
       className={cn(
         "relative flex cursor-pointer select-none items-center outline-none transition-colors",
         "text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2",
@@ -85,15 +89,17 @@ function PopoverItem({ className, disabled: _disabled, ...props }: React.Compone
   )
 }
 
-function PopoverMenuItem({ className, closeOnClick = false, onClick, children, size: _size, ...props }: React.ComponentProps<"div"> & { closeOnClick?: boolean; size?: string }) {
+function PopoverMenuItem({ className, closeOnClick = false, onClick, children, size: _size, slotId, ...props }: React.ComponentProps<"div"> & { closeOnClick?: boolean; size?: string, slotId?: string }) {
   const { size } = React.useContext(PopoverContext)
   const { isSub, close: subClose } = React.useContext(PopoverSubContext)
   const { close: mainClose } = React.useContext(PopoverContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <div
       data-slot="popover-menu-item"
+      data-slot-id={slotId ?? id}
       className={cn(
         "relative flex cursor-pointer select-none items-center outline-none transition-colors",
         "text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2",
@@ -120,21 +126,24 @@ function PopoverMenuItem({ className, closeOnClick = false, onClick, children, s
   )
 }
 
-function PopoverLabel({ className, ...props }: React.ComponentProps<"div">) {
+function PopoverLabel({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(PopoverContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <div
       data-slot="popover-label"
+      data-slot-id={slotId ?? id}
       className={cn("py-1.5 text-black-55", config.px, config.text, className)}
       {...props}
     />
   )
 }
 
-function PopoverSeparator({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="popover-separator" className={cn("-mx-1 my-1 h-px bg-neutral-2", className)} {...props} />
+function PopoverSeparator({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
+  const id = React.useId()
+  return <div data-slot="popover-separator" data-slot-id={slotId ?? id} className={cn("-mx-1 my-1 h-px bg-neutral-2", className)} {...props} />
 }
 
 export {

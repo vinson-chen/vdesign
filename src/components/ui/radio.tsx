@@ -57,6 +57,7 @@ interface RadioProps extends Omit<React.ComponentProps<"div">, "checked" | "disa
   size?: "sm" | "base" | "lg"
   onChange?: (checked: boolean) => void
   children?: React.ReactNode
+  slotId?: string
 }
 
 const gapMap = {
@@ -72,13 +73,16 @@ function Radio({
   size = "base",
   onChange,
   children,
+  slotId,
   ...props
 }: RadioProps) {
   const isDisabled = disabled
+  const id = React.useId()
 
   return (
     <div
       data-slot="radio"
+      data-slot-id={slotId ?? id}
       className={cn("flex items-center cursor-pointer", gapMap[size ?? "base"], isDisabled && "cursor-not-allowed", className)}
       onClick={() => !isDisabled && onChange?.(!checked)}
       {...props}

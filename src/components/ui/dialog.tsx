@@ -40,8 +40,9 @@ const dialogContentVariants = cva(
   "fixed left-1/2 top-1/2 z-50 w-[calc(100%-32px)] max-w-[95vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-white-100 shadow-[0_0_8px_1px_var(--black-5),0_12px_24px_-4px_var(--black-10)]"
 )
 
-function DialogContent({ className, overlayClassName, size = "base", children, ...props }: React.ComponentProps<typeof DialogPrimitive.Content> & { size?: "base" | "lg", overlayClassName?: string }) {
+function DialogContent({ className, overlayClassName, size = "base", children, slotId, ...props }: React.ComponentProps<typeof DialogPrimitive.Content> & { size?: "base" | "lg", overlayClassName?: string, slotId?: string }) {
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <DialogContext.Provider value={{ size }}>
@@ -49,6 +50,7 @@ function DialogContent({ className, overlayClassName, size = "base", children, .
         <DialogPrimitive.Overlay className={cn("fixed inset-0 z-50 bg-black/25 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", overlayClassName)} />
         <DialogPrimitive.Content
           data-slot="dialog-content"
+          data-slot-id={slotId ?? id}
           className={cn(
             dialogContentVariants(),
             config.content,
@@ -71,54 +73,62 @@ function DialogContent({ className, overlayClassName, size = "base", children, .
   )
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+function DialogHeader({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(DialogContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
-  return <div data-slot="dialog-header" className={cn("flex flex-col", config.header, className)} {...props} />
+  return <div data-slot="dialog-header" data-slot-id={slotId ?? id} className={cn("flex flex-col", config.header, className)} {...props} />
 }
 
-function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+function DialogBody({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(DialogContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
-  return <div data-slot="dialog-body" className={cn("flex flex-col", config.body, className)} {...props} />
+  return <div data-slot="dialog-body" data-slot-id={slotId ?? id} className={cn("flex flex-col", config.body, className)} {...props} />
 }
 
-function DialogField({ className, ...props }: React.ComponentProps<"div">) {
+function DialogField({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(DialogContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
-  return <div data-slot="dialog-field" className={cn("flex flex-col", config.field, className)} {...props} />
+  return <div data-slot="dialog-field" data-slot-id={slotId ?? id} className={cn("flex flex-col", config.field, className)} {...props} />
 }
 
-function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+function DialogFooter({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(DialogContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
-  return <div data-slot="dialog-footer" className={cn("flex flex-row justify-end", config.footer, className)} {...props} />
+  return <div data-slot="dialog-footer" data-slot-id={slotId ?? id} className={cn("flex flex-row justify-end", config.footer, className)} {...props} />
 }
 
-function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function DialogTitle({ className, slotId, ...props }: React.ComponentProps<typeof DialogPrimitive.Title> & { slotId?: string }) {
   const { size } = React.useContext(DialogContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
+      data-slot-id={slotId ?? id}
       className={cn("font-medium text-black-85", config.title, className)}
       {...props}
     />
   )
 }
 
-function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
+function DialogDescription({ className, slotId, ...props }: React.ComponentProps<typeof DialogPrimitive.Description> & { slotId?: string }) {
   const { size } = React.useContext(DialogContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
+      data-slot-id={slotId ?? id}
       className={cn("text-black-55", config.description, className)}
       {...props}
     />

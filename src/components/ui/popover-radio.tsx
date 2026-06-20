@@ -20,14 +20,17 @@ function PopoverRadioGroup({
   value,
   onValueChange,
   children,
+  slotId,
   ...props
 }: Omit<React.ComponentProps<"div">, "onChange"> & {
   value: string
   onValueChange: (value: string) => void
   children: React.ReactNode
+  slotId?: string
 }) {
+  const id = React.useId()
   return (
-    <div data-slot="popover-radio-group" className={cn("", className)} {...props}>
+    <div data-slot="popover-radio-group" data-slot-id={slotId ?? id} className={cn("", className)} {...props}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child) && child.type === PopoverRadioItem) {
           return React.cloneElement(child as React.ReactElement<any>, {
@@ -48,19 +51,23 @@ function PopoverRadioItem({
   disabled = false,
   onValueChange,
   children,
+  slotId,
   ...props
 }: Omit<React.ComponentProps<"div">, "onChange"> & {
   value: string
   checked?: boolean
   disabled?: boolean
   onValueChange?: () => void
+  slotId?: string
 }) {
   const { size } = React.useContext(PopoverContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <div
       data-slot="popover-radio-item"
+      data-slot-id={slotId ?? id}
       className={cn(
         "relative flex cursor-pointer select-none items-center outline-none transition-colors",
         "text-black-85 hover:bg-neutral-1 focus:bg-neutral-1 active:bg-neutral-2",

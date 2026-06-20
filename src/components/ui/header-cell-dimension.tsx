@@ -9,6 +9,7 @@ import { useTable } from "@/hooks"
 function HeaderCellDimensionView() {
   const { data, state, actions } = useTable()
   const { close } = React.useContext(PopoverContext)
+  const id = React.useId()
 
   // 计算当前行数（纯表体行）
   const currentRowCount = data.rows.length
@@ -66,6 +67,7 @@ function HeaderCellDimensionView() {
   return (
     <div
       data-slot="header-cell-dimension"
+      data-slot-id={id}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault()

@@ -49,8 +49,9 @@ const drawerContentVariants = cva(
   "fixed right-0 top-0 z-50 h-full flex flex-col bg-white-100 shadow-[0_0_8px_1px_var(--black-5),0_12px_24px_-4px_var(--black-10)] select-text"
 )
 
-function DrawerContent({ className, size = "base", children, ...props }: React.ComponentProps<typeof DrawerPrimitive.Content> & { size?: "base" | "lg" | "wide" }) {
+function DrawerContent({ className, size = "base", children, slotId, ...props }: React.ComponentProps<typeof DrawerPrimitive.Content> & { size?: "base" | "lg" | "wide", slotId?: string }) {
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <DrawerContext.Provider value={{ size }}>
@@ -58,6 +59,7 @@ function DrawerContent({ className, size = "base", children, ...props }: React.C
         <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-black/25" />
         <DrawerPrimitive.Content
           data-slot="drawer-content"
+          data-slot-id={slotId ?? id}
           className={cn(drawerContentVariants(), config.content, className)}
           onPointerDownCapture={(e) => e.stopPropagation()}
           {...props}
@@ -69,54 +71,62 @@ function DrawerContent({ className, size = "base", children, ...props }: React.C
   )
 }
 
-function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
+function DrawerHeader({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(DrawerContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
-  return <div data-slot="drawer-header" className={cn("flex flex-col select-text", config.header, className)} {...props} />
+  return <div data-slot="drawer-header" data-slot-id={slotId ?? id} className={cn("flex flex-col select-text", config.header, className)} {...props} />
 }
 
-function DrawerBody({ className, ...props }: React.ComponentProps<"div">) {
+function DrawerBody({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(DrawerContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
-  return <div data-slot="drawer-body" className={cn("flex flex-col flex-1 overflow-auto select-text", config.body, className)} {...props} />
+  return <div data-slot="drawer-body" data-slot-id={slotId ?? id} className={cn("flex flex-col flex-1 overflow-auto select-text", config.body, className)} {...props} />
 }
 
-function DrawerField({ className, ...props }: React.ComponentProps<"div">) {
+function DrawerField({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(DrawerContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
-  return <div data-slot="drawer-field" className={cn("flex flex-col", config.field, className)} {...props} />
+  return <div data-slot="drawer-field" data-slot-id={slotId ?? id} className={cn("flex flex-col", config.field, className)} {...props} />
 }
 
-function DrawerFooter({ className, ...props }: React.ComponentProps<"div">) {
+function DrawerFooter({ className, slotId, ...props }: React.ComponentProps<"div"> & { slotId?: string }) {
   const { size } = React.useContext(DrawerContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
-  return <div data-slot="drawer-footer" className={cn("flex flex-row items-center bg-white-100", config.footer, className)} {...props} />
+  return <div data-slot="drawer-footer" data-slot-id={slotId ?? id} className={cn("flex flex-row items-center bg-white-100", config.footer, className)} {...props} />
 }
 
-function DrawerTitle({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Title>) {
+function DrawerTitle({ className, slotId, ...props }: React.ComponentProps<typeof DrawerPrimitive.Title> & { slotId?: string }) {
   const { size } = React.useContext(DrawerContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <DrawerPrimitive.Title
       data-slot="drawer-title"
+      data-slot-id={slotId ?? id}
       className={cn("font-medium text-black-85", config.title, className)}
       {...props}
     />
   )
 }
 
-function DrawerDescription({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Description>) {
+function DrawerDescription({ className, slotId, ...props }: React.ComponentProps<typeof DrawerPrimitive.Description> & { slotId?: string }) {
   const { size } = React.useContext(DrawerContext)
   const config = sizeConfig[size]
+  const id = React.useId()
 
   return (
     <DrawerPrimitive.Description
       data-slot="drawer-description"
+      data-slot-id={slotId ?? id}
       className={cn("text-black-55", config.description, className)}
       {...props}
     />

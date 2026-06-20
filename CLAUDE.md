@@ -57,6 +57,23 @@ export { Component, componentVariants }
 
 修改 `src/components/ui/data-table.tsx` 或表头交互行为前，必须先阅读 `docs/table-interactions.md`。
 
+**DataTable 使用前提**：DataTable 内部引用了 Tooltip 组件，凡是使用 `<DataTable>` 的页面必须在组件树外层包裹 `<TooltipProvider>`，否则会抛出 `Tooltip must be used within TooltipProvider` 运行时错误。
+
+```tsx
+import { DataTable } from "@/components/ui/data-table"
+import { TooltipProvider } from "@/components/ui/tooltip"
+
+// ✅ 正确
+<TooltipProvider>
+  <DataTable data={data} />
+</TooltipProvider>
+
+// ❌ 错误：缺少 TooltipProvider
+<DataTable data={data} />
+```
+
+新建独立页面入口时（如 `data-dictionary.html`），务必检查是否已包裹 `TooltipProvider`。
+
 ## Demo 页面布局规范
 
 每个页面由多个 section 组成，遵循以下间距规则：

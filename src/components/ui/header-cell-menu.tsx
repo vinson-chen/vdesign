@@ -22,11 +22,12 @@ function HeaderCellMenuView({
 }) {
   const { actions } = useTable()
   const { close } = React.useContext(PopoverContext)
+  const id = React.useId()
 
   // readOnly 模式：隐藏编辑列、插入列、行列数管理、删除列
   // 编辑模式：显示全部菜单项
   return (
-    <div data-slot="header-cell-menu">
+    <div data-slot="header-cell-menu" data-slot-id={id}>
       {!readOnly && (
         <PopoverMenuItem size="base" onClick={onEdit}>
           <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-edit" /></svg>

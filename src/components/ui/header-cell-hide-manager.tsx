@@ -5,13 +5,14 @@ function HeaderCellHideManagerView({ firstDataColumnId }: {
   firstDataColumnId: string | undefined
 }) {
   const { state, actions } = useTable()
+  const id = React.useId()
 
   // 查找 checkbox 列
   const checkboxColumn = state.allColumns.find(col => col.type === "checkbox")
   const isCheckboxHidden = checkboxColumn ? state.hiddenColumns.has(checkboxColumn.id) : false
 
   return (
-    <div data-slot="hide-column-view">
+    <div data-slot="hide-column-view" data-slot-id={id}>
       {/* 多选列选项 */}
       {checkboxColumn && (
         <PopoverMenuItem

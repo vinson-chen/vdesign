@@ -26,14 +26,18 @@ function NavigationItem({
   size,
   onClick,
   children,
+  slotId,
   ...props
 }: React.ComponentProps<"div"> &
   VariantProps<typeof navigationItemVariants> & {
     onClick?: () => void
+    slotId?: string
   }) {
+  const id = React.useId()
   return (
     <div
       data-slot="navigation-item"
+      data-slot-id={slotId ?? id}
       className={cn(navigationItemVariants({ variant, size }), className)}
       onClick={(e) => { e.stopPropagation(); onClick?.() }}
       {...props}

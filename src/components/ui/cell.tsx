@@ -40,6 +40,7 @@ const slotVariants = cva(
 
 interface CellProps extends React.ComponentProps<"div">, VariantProps<typeof cellVariants> {
   width?: number
+  columnId?: string
   children?: React.ReactNode
   isLastCell?: boolean
   resizable?: boolean
@@ -50,7 +51,8 @@ interface CellProps extends React.ComponentProps<"div">, VariantProps<typeof cel
 }
 
 // Cell 是纯展示组件，用 React.memo 避免父组件状态变化时重渲染
-const Cell = React.memo(function Cell({ className, variant, width, children, isLastCell, resizable, onResizeStart, onHoverEdge, slotClassName, style, ...props }: CellProps) {
+const Cell = React.memo(function Cell({ className, variant, width, columnId, children, isLastCell, resizable, onResizeStart, onHoverEdge, slotClassName, style, ...props }: CellProps) {
+  const id = React.useId()
   const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -78,6 +80,7 @@ const Cell = React.memo(function Cell({ className, variant, width, children, isL
   return (
     <div
       data-slot="cell"
+      data-slot-id={columnId ?? id}
       className={cn(
         cellVariants({ variant, className }),
         !isLastCell && "border-r border-neutral-2"
@@ -104,11 +107,14 @@ const CellSlot = React.memo(function CellSlot({
   className,
   size,
   children,
+  slotId,
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof slotVariants>) {
+}: React.ComponentProps<"div"> & VariantProps<typeof slotVariants> & { slotId?: string }) {
+  const id = React.useId()
   return (
     <div
       data-slot="cell-slot"
+      data-slot-id={slotId ?? id}
       className={cn(slotVariants({ size, className }))}
       {...props}
     >

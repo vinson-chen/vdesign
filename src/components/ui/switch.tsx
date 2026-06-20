@@ -29,17 +29,21 @@ function Switch({
   disabled,
   size,
   onChange,
+  slotId,
   ...props
 }: Omit<React.ComponentProps<"button">, "onChange"> &
   VariantProps<typeof switchVariants> & {
     checked?: boolean
     disabled?: boolean
     onChange?: (checked: boolean) => void
+    slotId?: string
   }) {
   const s = size || "base"
+  const id = React.useId()
   return (
     <button
       data-slot="switch"
+      data-slot-id={slotId ?? id}
       type="button"
       role="switch"
       aria-checked={checked}

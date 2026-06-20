@@ -493,6 +493,7 @@ function ButtonLinkManager({ config, onSave }: {
 }) {
   const [label, setLabel] = React.useState(config?.label ?? "")
   const [url, setUrl] = React.useState(config?.url ?? "")
+  const id = React.useId()
 
   const handleSave = () => {
     onSave({ label, url })
@@ -505,6 +506,7 @@ function ButtonLinkManager({ config, onSave }: {
   return (
     <div
       data-slot="button-link-manager"
+      data-slot-id={id}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault()

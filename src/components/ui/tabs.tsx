@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils"
 // Context 自动传递 size
 const TabsContext = React.createContext<{ size: "sm" | "base" | "lg" }>({ size: "base" })
 
-function Tabs({ className, size = "base", children, ...props }: React.ComponentProps<typeof TabsPrimitive.Root> & { size?: "sm" | "base" | "lg" }) {
+function Tabs({ className, size = "base", children, slotId, ...props }: React.ComponentProps<typeof TabsPrimitive.Root> & { size?: "sm" | "base" | "lg", slotId?: string }) {
+  const id = React.useId()
   return (
     <TabsContext.Provider value={{ size }}>
-      <TabsPrimitive.Root data-slot="tabs" className={cn(className)} {...props}>
+      <TabsPrimitive.Root data-slot="tabs" data-slot-id={slotId ?? id} className={cn(className)} {...props}>
         {children}
       </TabsPrimitive.Root>
     </TabsContext.Provider>
@@ -40,12 +41,14 @@ const tabsListVariants = cva(
   }
 )
 
-function TabsList({ className, variant, ...props }: React.ComponentProps<typeof TabsPrimitive.List> & VariantProps<typeof tabsListVariants>) {
+function TabsList({ className, variant, slotId, ...props }: React.ComponentProps<typeof TabsPrimitive.List> & VariantProps<typeof tabsListVariants> & { slotId?: string }) {
   const { size } = React.useContext(TabsContext)
+  const id = React.useId()
 
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
+      data-slot-id={slotId ?? id}
       className={cn(tabsListVariants({ variant, size }), className)}
       {...props}
     />
@@ -85,6 +88,7 @@ function TabsTrigger({ className, variant, disabled, ...props }: React.Component
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
+      data-slot-id={props.value}
       disabled={disabled}
       className={cn(tabsTriggerVariants({ variant, size, disabled }), className)}
       {...props}
@@ -106,12 +110,14 @@ const tabsContentVariants = cva(
   }
 )
 
-function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>) {
+function TabsContent({ className, slotId, ...props }: React.ComponentProps<typeof TabsPrimitive.Content> & { slotId?: string }) {
   const { size } = React.useContext(TabsContext)
+  const id = React.useId()
 
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
+      data-slot-id={slotId ?? id}
       className={cn(tabsContentVariants({ size }), className)}
       {...props}
     />

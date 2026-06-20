@@ -44,18 +44,21 @@ const sizeConfig = {
 interface InputProps extends Omit<React.ComponentProps<"input">, "size">, VariantProps<typeof inputVariants> {
   leftIcon?: string
   rightIcon?: string
+  slotId?: string
 }
 
-function Input({ className, variant, size, noSpinner, disabled, leftIcon, rightIcon, ...props }: InputProps) {
+function Input({ className, variant, size, noSpinner, disabled, leftIcon, rightIcon, slotId, ...props }: InputProps) {
   const isDisabled = disabled || variant === "disabled"
   const s = size ?? "base"
   const config = sizeConfig[s]
+  const id = React.useId()
 
   // 无图标：直接渲染 input
   if (!leftIcon && !rightIcon) {
     return (
       <input
         data-slot="input"
+        data-slot-id={slotId ?? id}
         disabled={isDisabled}
         className={cn(
           inputVariants({ variant, size, noSpinner }),
@@ -71,6 +74,7 @@ function Input({ className, variant, size, noSpinner, disabled, leftIcon, rightI
   return (
     <div
       data-slot="input"
+      data-slot-id={slotId ?? id}
       className={cn(
         "flex items-center border bg-white-100 outline-none transition-all",
         config.height,
