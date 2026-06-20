@@ -20,7 +20,7 @@ function HeaderCellMenuView({
   onHideManager: () => void
   onDimension: () => void
 }) {
-  const { actions } = useTable()
+  const { actions, state } = useTable()
   const { close } = React.useContext(PopoverContext)
   const id = React.useId()
 
@@ -41,10 +41,45 @@ function HeaderCellMenuView({
         </PopoverMenuItem>
       )}
       <PopoverSeparator />
-      <PopoverMenuItem size="base" closeOnClick onClick={() => columnId && actions.setGroupColumn(groupColumnId === columnId ? null : columnId)}>
-        <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-form" /></svg>
-        <span className="text-sm text-black-85">{groupColumnId === columnId ? "取消分组" : "设为分组"}</span>
-      </PopoverMenuItem>
+      {isFirstDataColumn && groupColumnId && (
+        <PopoverMenuItem
+          size="base"
+          onClick={() => {
+            close()
+            setTimeout(() => {
+              if (state.collapsedGroups.size > 0) {
+                actions.expandAllGroups()
+              } else {
+                actions.collapseAllGroups()
+              }
+            }, 250)
+          }}
+        >
+          <svg className="icon text-black-55" aria-hidden="true">
+            <use xlinkHref={state.collapsedGroups.size > 0 ? "#icon-chevron-down-double" : "#icon-a-chevron-rightdouble"} />
+          </svg>
+          <span className="text-sm text-black-85">
+            {state.collapsedGroups.size > 0 ? "展开分组" : "收起分组"}
+          </span>
+        </PopoverMenuItem>
+      )}
+      {isFirstDataColumn ? (
+        <PopoverMenuItem size="base" onClick={() => {
+          close()
+          setTimeout(() => columnId && actions.setGroupColumn(groupColumnId ? null : columnId), 250)
+        }}>
+          <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-form" /></svg>
+          <span className="text-sm text-black-85">{groupColumnId ? "取消分组" : "设为分组"}</span>
+        </PopoverMenuItem>
+      ) : (
+        <PopoverMenuItem size="base" onClick={() => {
+          close()
+          setTimeout(() => columnId && actions.setGroupColumn(groupColumnId === columnId ? null : columnId), 250)
+        }}>
+          <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-form" /></svg>
+          <span className="text-sm text-black-85">{groupColumnId === columnId ? "取消分组" : "设为分组"}</span>
+        </PopoverMenuItem>
+      )}
       {!readOnly && !isFirstDataColumn && (
         <PopoverMenuItem size="base" closeOnClick onClick={() => columnId && actions.insertColumnLeft(columnId)}>
           <svg className="icon text-black-55" aria-hidden="true"><use xlinkHref="#icon-arrow-left" /></svg>

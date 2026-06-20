@@ -1,6 +1,8 @@
 import * as React from "react"
 import { PopoverMenuItem } from "./popover"
 import { useTable } from "@/hooks"
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
+import { cn } from "@/lib/utils"
 
 function HeaderCellHideManagerView({ firstDataColumnId }: {
   firstDataColumnId: string | undefined
@@ -39,10 +41,17 @@ function HeaderCellHideManagerView({ firstDataColumnId }: {
               closeOnClick={false}
               onClick={() => actions.toggleColumnVisibility(col.id)}
             >
-              <svg className="icon text-black-55" aria-hidden="true">
+              <svg className="icon text-black-55 shrink-0" aria-hidden="true">
                 <use xlinkHref={isHidden ? "#icon-browse-off" : "#icon-browse"} />
               </svg>
-              <span>{col.title || col.id}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="truncate">{col.title || col.id}</span>
+                </TooltipTrigger>
+                <TooltipContent side="top" size="base">
+                  <p>{col.title || col.id}</p>
+                </TooltipContent>
+              </Tooltip>
             </PopoverMenuItem>
           )
         })}

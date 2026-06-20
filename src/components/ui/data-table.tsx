@@ -1171,14 +1171,15 @@ function DataTableInner({
       ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
       : data.rows
     for (const row of allRows) {
-      for (const cell of row.cells) {
-        if (cell.id === state.lockedCellId) {
-          return cell.type ?? 'text'
+      for (let i = 0; i < row.cells.length; i++) {
+        const cell = row.cells[i]
+        if (cell?.id === state.lockedCellId) {
+          return cell.type ?? data.columns[i]?.type ?? 'text'
         }
       }
     }
     return null
-  }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
+  }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows, data.columns])
 
   // 键盘导航：获取单元格当前值
   const getLockedCellValue = React.useCallback(() => {
@@ -1312,9 +1313,9 @@ function DataTableInner({
         }
       }
 
-      // Enter → 进入编辑态（文本单元格）— readOnly 模式下禁用
+      // Enter → 进入编辑态（文本/数字单元格）— readOnly 模式下禁用
       if (e.key === 'Enter' && !state.readOnly) {
-        if (cellType === 'text' || cellType === 'editable') {
+        if (cellType === 'text' || cellType === 'editable' || cellType === 'number') {
           const currentValue = getLockedCellValue()
           actions.startEdit(state.lockedCellId!, currentValue)
         }
@@ -1325,13 +1326,18 @@ function DataTableInner({
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !state.readOnly) {
         if (cellType === 'text' || cellType === 'editable') {
           actions.startEdit(state.lockedCellId!, e.key)
+        } else if (cellType === 'number') {
+          // 数字单元格仅接受数字字符作为初始编辑值，拒绝字母等非数字字符
+          if (/^[\d\-.]$/.test(e.key)) {
+            actions.startEdit(state.lockedCellId!, e.key)
+          }
         }
         return
       }
 
       // Backspace/Delete → 进入编辑态（清空内容）— readOnly 模式下禁用
       if ((e.key === 'Backspace' || e.key === 'Delete') && !state.readOnly) {
-        if (cellType === 'text' || cellType === 'editable') {
+        if (cellType === 'text' || cellType === 'editable' || cellType === 'number') {
           actions.startEdit(state.lockedCellId!, '')
         }
         return

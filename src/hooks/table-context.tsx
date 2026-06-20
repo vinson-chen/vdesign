@@ -401,7 +401,30 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
   // 设置分组列
   const setGroupColumn = React.useCallback((columnId: string | null) => {
     setGroupColumnId(columnId)
-  }, [])
+    if (columnId) {
+      // 重新计算分组值并默认展开第一个，收起其余
+      const groupColumnIndex = columns.findIndex(col => col.id === columnId)
+      if (groupColumnIndex === -1) {
+        setCollapsedGroups(new Set())
+        return
+      }
+      const groupValues = Array.from(
+        new Set(rows.map(row => String(row.cells[groupColumnIndex]?.value ?? "")))
+      ).sort((a, b) => {
+        if (!a && b) return 1
+        if (a && !b) return -1
+        return 0
+      })
+      const firstValue = groupValues[0]
+      // 收起第一组以外的所有组
+      setCollapsedGroups(firstValue
+        ? new Set(groupValues.filter(v => v !== firstValue))
+        : new Set()
+      )
+    } else {
+      setCollapsedGroups(new Set())
+    }
+  }, [columns, rows])
 
   const state: TableState = {
     selectedRows,
@@ -431,6 +454,20 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
       return next
     })
   }, [])
+
+  // 展开所有分组
+  const expandAllGroups = React.useCallback(() => {
+    setCollapsedGroups(new Set())
+  }, [])
+
+  // 收起所有分组
+  const collapseAllGroups = React.useCallback(() => {
+    if (!groupColumnId) return
+    const groupColumnIndex = columns.findIndex(col => col.id === groupColumnId)
+    if (groupColumnIndex === -1) return
+    const allGroupValues = new Set(rows.map(row => String(row.cells[groupColumnIndex]?.value ?? "")))
+    setCollapsedGroups(allGroupValues)
+  }, [groupColumnId, columns, rows])
 
   // 全选/取消全选某个分组
   const toggleGroupSelect = React.useCallback((_groupValue: string, groupRows: RowData[]) => {
@@ -713,6 +750,8 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     insertRowInGroup,
     insertRow,
     updateGroupValues,
+    expandAllGroups,
+    collapseAllGroups,
     selectColumn,
     moveColumnOrder,
     setDimension,

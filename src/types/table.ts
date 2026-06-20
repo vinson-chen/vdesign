@@ -175,6 +175,8 @@ export interface TableActions {
   insertRowInGroup: (groupValue: string, groupColumnId: string) => void
   insertRow: () => void
   updateGroupValues: (oldGroupValue: string, newGroupValue: string, groupColumnId: string) => void
+  expandAllGroups: () => void
+  collapseAllGroups: () => void
   // 列选中操作
   selectColumn: (columnId: string | null) => void
   // 列顺序操作

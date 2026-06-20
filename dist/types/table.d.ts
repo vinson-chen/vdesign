@@ -111,6 +111,8 @@ export interface TableActions {
     insertRowInGroup: (groupValue: string, groupColumnId: string) => void;
     insertRow: () => void;
     updateGroupValues: (oldGroupValue: string, newGroupValue: string, groupColumnId: string) => void;
+    expandAllGroups: () => void;
+    collapseAllGroups: () => void;
     selectColumn: (columnId: string | null) => void;
     moveColumnOrder: (sourceColumnId: string, targetColumnId: string, insertPosition: 'left' | 'right') => void;
     setDimension: (targetRowCount: number, targetColumnCount: number) => void;
