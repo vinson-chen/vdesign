@@ -473,8 +473,8 @@ export default function App() {
 
         {/* 表格区 */}
         <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "0 32px 32px" }}>
-          <div style={{ marginTop: "24px", backgroundColor: "var(--white-100)", overflow: "auto", border: "1px solid var(--neutral-2)", width: "fit-content", maxWidth: "100%" }}>
-            <DataTable data={tableData} variant="plain" readOnly cellRenderers={cellRenderers} />
+          <div style={{ marginTop: "24px" }}>
+            <DataTable data={tableData} variant="base" contained readOnly cellRenderers={cellRenderers} />
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { defaultCellRenderers } from "@/components/ui/cell-renderers"
 import type { CellRendererProps, TableData } from "@/types/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle } from "./shared"
 
 // ============================================
 // 本体论命名工具
@@ -182,14 +182,12 @@ export function ButtonPage() {
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="按钮 Button" />
-      <DemoTableWrapper>
-        <DataTable
+              <DataTable
           data={tableData}
-          variant="plain"
+          variant="base" contained
           cellRenderers={cellRenderers}
           readOnly
         />
-      </DemoTableWrapper>
-    </div>
+          </div>
   )
 }

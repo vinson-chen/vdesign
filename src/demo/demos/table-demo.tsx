@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/ui/data-table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle } from "./shared"
 
 // 表格 table 页面组件
 function TablePage() {
@@ -28,9 +28,7 @@ function TablePage() {
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="表格 Table" />
-      <DemoTableWrapper>
-        <DataTable data={tableData} variant="plain" />
-      </DemoTableWrapper>
+      <DataTable data={tableData} variant="base" contained />
     </div>
   )
 }

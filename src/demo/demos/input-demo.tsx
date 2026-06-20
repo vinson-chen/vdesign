@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import { SectionTitle, getDisplaySize } from "./shared"
 import type { SlotConfig } from "./shared"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -153,14 +153,12 @@ export function InputPage() {
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="输入 Input" />
-      <DemoTableWrapper>
-        <DataTable
+              <DataTable
           data={tableData}
-          variant="plain"
+          variant="base" contained
           cellRenderers={cellRenderers}
           readOnly
         />
-      </DemoTableWrapper>
-    </div>
+          </div>
   )
 }

@@ -5,7 +5,7 @@ import { createToastWithSize } from "@/components/ui/sonner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle } from "./shared"
 
 // ============================================
 // 自定义单元格渲染器
@@ -154,14 +154,12 @@ export function SonnerPage() {
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="通知 Sonner" />
-      <DemoTableWrapper>
-        <DataTable
+              <DataTable
           data={tableData}
-          variant="plain"
+          variant="base" contained
           cellRenderers={cellRenderers}
           readOnly
         />
-      </DemoTableWrapper>
-    </div>
+          </div>
   )
 }

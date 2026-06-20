@@ -664,12 +664,30 @@ interface DataTableProps extends React.ComponentProps<"div">, VariantProps<typeo
   data: TableData
   cellRenderers?: CellRendererRegistry
   readOnly?: boolean
+  /** 是否自带滚动容器（含边框+圆角），默认 false */
+  contained?: boolean
 }
 
-function DataTable({ className, variant, data, cellRenderers, readOnly, ...props }: DataTableProps) {
+function DataTable({ className, variant, radius, data, cellRenderers, readOnly, contained = false, ...props }: DataTableProps) {
+  // contained 模式下，边框和圆角提升到外层滚动容器，表格内部不透出边框
+  const wrapperClass = contained
+    ? tableVariants({ variant, radius })
+    : ""
+  const innerVariant = contained ? "plain" as const : variant
+  const innerRadius = contained ? "none" as const : radius
+
+  const inner = (
+    <DataTableInner className={className} variant={innerVariant} radius={innerRadius} {...props} />
+  )
   return (
     <TableProvider data={data} cellRenderers={cellRenderers} readOnly={readOnly}>
-      <DataTableInner className={className} variant={variant} {...props} />
+      {contained ? (
+        <div className={cn("min-h-0 overflow-auto overscroll-none w-fit max-w-full", wrapperClass)}>
+          {inner}
+        </div>
+      ) : (
+        inner
+      )}
     </TableProvider>
   )
 }
@@ -680,6 +698,7 @@ const HeaderPopoverOpenRefContext = React.createContext<React.MutableRefObject<b
 function DataTableInner({
   className,
   variant,
+  radius,
   slotId,
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof tableVariants> & { slotId?: string }) {
@@ -1398,7 +1417,7 @@ function DataTableInner({
         data-slot-id={slotId ?? id}
         data-resizing={resizingColumnId || draggingColumnId ? "true" : undefined}
         className={cn(
-          tableVariants({ variant }),
+          tableVariants({ variant, radius }),
           state.readOnly ? "w-fit max-w-full" : "w-max min-w-full",
           className
         )}

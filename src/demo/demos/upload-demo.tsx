@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Upload } from "@/components/ui/upload"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle } from "./shared"
 
 // ============================================
 // Upload 渲染器
@@ -119,15 +119,13 @@ export function UploadPage() {
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="上传 Upload" />
       <section>
-        <DemoTableWrapper>
-          <DataTable
+                  <DataTable
             data={tableData}
-            variant="plain"
+            variant="base" contained
             cellRenderers={cellRenderers}
             readOnly
           />
-        </DemoTableWrapper>
-      </section>
+              </section>
     </div>
   )
 }

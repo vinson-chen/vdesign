@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper } from "./shared"
+import { SectionTitle } from "./shared"
 
 // ============================================
 // 方向配置
@@ -123,15 +123,13 @@ export function TooltipPage() {
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="提示 Tooltip" />
       <section className="mb-16">
-        <DemoTableWrapper>
-          <DataTable
+                  <DataTable
             data={tableData}
-            variant="plain"
+            variant="base" contained
             cellRenderers={cellRenderers}
             readOnly
           />
-        </DemoTableWrapper>
-      </section>
+              </section>
     </div>
   )
 }

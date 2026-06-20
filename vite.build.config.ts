@@ -5,6 +5,7 @@ import dts from "vite-plugin-dts"
 
 // 组件库构建配置
 export default defineConfig({
+  publicDir: false,
   plugins: [
     react(),
     dts({

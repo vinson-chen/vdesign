@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Radio } from "@/components/ui/radio"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
-import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import { SectionTitle, getDisplaySize } from "./shared"
 import type { SlotConfig } from "./shared"
 
 // ============================================
@@ -196,14 +196,12 @@ export function RadioPage() {
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="单选 Radio" />
-      <DemoTableWrapper>
-        <DataTable
+              <DataTable
           data={tableData}
-          variant="plain"
+          variant="base" contained
           cellRenderers={cellRenderers}
           readOnly
         />
-      </DemoTableWrapper>
-    </div>
+          </div>
   )
 }

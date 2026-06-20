@@ -1,0 +1,309 @@
+@import "tailwindcss";
+
+/* ========================================
+   Design Token - 品牌色色阶
+   浅色模式: 1=最亮 → 6=最暗
+   ======================================== */
+
+@theme inline {
+  /* 品牌色色阶 - 使用 CSS 变量引用，支持动态更新 */
+  --color-brand-1: var(--brand-1);
+  --color-brand-2: var(--brand-2);
+  --color-brand-3: var(--brand-3);
+  --color-brand-4: var(--brand-4);
+  --color-brand-5: var(--brand-5);
+  --color-brand-6: var(--brand-6);
+
+  /* 安全色色阶 - 使用 CSS 变量引用，支持动态更新 */
+  --color-success-1: var(--success-1);
+  --color-success-2: var(--success-2);
+  --color-success-3: var(--success-3);
+  --color-success-4: var(--success-4);
+  --color-success-5: var(--success-5);
+  --color-success-6: var(--success-6);
+
+  /* 警告色色阶 - 使用 CSS 变量引用，支持动态更新 */
+  --color-warning-1: var(--warning-1);
+  --color-warning-2: var(--warning-2);
+  --color-warning-3: var(--warning-3);
+  --color-warning-4: var(--warning-4);
+  --color-warning-5: var(--warning-5);
+  --color-warning-6: var(--warning-6);
+
+  /* 危险色色阶 - 使用 CSS 变量引用，支持动态更新 */
+  --color-error-1: var(--error-1);
+  --color-error-2: var(--error-2);
+  --color-error-3: var(--error-3);
+  --color-error-4: var(--error-4);
+  --color-error-5: var(--error-5);
+  --color-error-6: var(--error-6);
+
+  /* 中性色色阶 */
+  --color-neutral-1: oklch(.961 0 0);
+  --color-neutral-2: oklch(.921 0 0);
+  --color-neutral-3: oklch(.805 0 0);
+  --color-neutral-4: oklch(.556 0 0);
+  --color-neutral-5: oklch(.269 0 0);
+  --color-neutral-6: oklch(0 0 0);
+
+  /* 黑色透明色阶 */
+  --color-black-5: oklch(0 0 0 / 5%);
+  --color-black-10: oklch(0 0 0 / 10%);
+  --color-black-25: oklch(0 0 0 / 25%);
+  --color-black-55: oklch(0 0 0 / 55%);
+  --color-black-85: oklch(0 0 0 / 85%);
+  --color-black-100: oklch(0 0 0);
+
+  /* 白色透明色阶 */
+  --color-white-10: oklch(1 0 0 / 10%);
+  --color-white-20: oklch(1 0 0 / 20%);
+  --color-white-30: oklch(1 0 0 / 30%);
+  --color-white-60: oklch(1 0 0 / 60%);
+  --color-white-90: oklch(1 0 0 / 90%);
+  --color-white-100: oklch(1 0 0);
+
+  /* 语义色 */
+  --color-text: oklch(0.20 0 0);
+  --color-text-secondary: oklch(0.40 0 0);
+  --color-text-tertiary: oklch(0.60 0 0);
+  --color-text-inverse: oklch(0.98 0 0);
+
+  --color-bg: oklch(0.98 0 0);
+  --color-bg-secondary: oklch(0.95 0 0);
+
+  --color-border: oklch(0.90 0 0);
+
+  /* 字体 */
+  --font-sans: "PingFang SC", system-ui, sans-serif;
+
+  /* 动画 */
+  --animate-in: fadeIn 0.2s ease-out;
+  --animate-out: fadeOut 0.2s ease-in;
+}
+
+/* 动画关键帧 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes zoomOut {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.95); opacity: 0; }
+}
+
+@keyframes slideInFromTop {
+  from { transform: translateY(-8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+[data-slot="menu-item"] svg {
+  fill: currentColor;
+}
+.animate-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-out {
+  animation: fadeOut 0.15s ease-in;
+}
+
+.fade-in-0 {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.fade-out-0 {
+  animation: fadeOut 0.15s ease-in;
+}
+
+.zoom-in-100 {
+  animation: zoomIn 0.2s ease-out;
+}
+
+.zoom-out-95 {
+  animation: zoomOut 0.15s ease-in;
+}
+
+.slide-in-from-top-2 {
+  animation: slideInFromTop 0.2s ease-out;
+}
+
+/* ========================================
+   浅色模式 - CSS 变量定义
+   ======================================== */
+:root {
+  /* 品牌色色阶 - 混合法生成（主色 #0888FF） */
+  --brand-1: oklch(0.97 0.02 248);
+  --brand-2: oklch(0.93 0.03 245);
+  --brand-3: oklch(0.90 0.05 247);
+  --brand-4: oklch(0.68 0.18 251);
+  --brand-5: oklch(0.63 0.20 254);
+  --brand-6: oklch(0.60 0.19 254);
+
+  /* 安全色色阶 - 混合法生成（主色 #07BB85） */
+  --success-1: oklch(0.98 0.02 174);
+  --success-2: oklch(0.95 0.04 176);
+  --success-3: oklch(0.92 0.06 175);
+  --success-4: oklch(0.76 0.15 167);
+  --success-5: oklch(0.70 0.15 164);
+  --success-6: oklch(0.66 0.14 164);
+
+  /* 警告色色阶 - 混合法生成（主色 #FFBD34） */
+  --warning-1: oklch(0.99 0.02 86);
+  --warning-2: oklch(0.97 0.03 84);
+  --warning-3: oklch(0.96 0.05 85);
+  --warning-4: oklch(0.86 0.14 83);
+  --warning-5: oklch(0.84 0.16 81);
+  --warning-6: oklch(0.79 0.15 80);
+
+  /* 危险色色阶 - 混合法生成（主色 #EC4B4B） */
+  --error-1: oklch(0.96 0.02 17);
+  --error-2: oklch(0.93 0.04 18);
+  --error-3: oklch(0.90 0.05 18);
+  --error-4: oklch(0.68 0.18 23);
+  --error-5: oklch(0.64 0.20 25);
+  --error-6: oklch(0.60 0.18 25);
+
+  --neutral-1: oklch(.961 0 0);
+  --neutral-2: oklch(.921 0 0);
+  --neutral-3: oklch(.805 0 0);
+  --neutral-4: oklch(.556 0 0);
+  --neutral-5: oklch(.269 0 0);
+  --neutral-6: oklch(0 0 0);
+
+  --black-5: oklch(0 0 0 / 5%);
+  --black-10: oklch(0 0 0 / 10%);
+  --black-25: oklch(0 0 0 / 25%);
+  --black-55: oklch(0 0 0 / 55%);
+  --black-85: oklch(0 0 0 / 85%);
+  --black-100: oklch(0 0 0);
+
+  --white-10: oklch(1 0 0 / 10%);
+  --white-20: oklch(1 0 0 / 20%);
+  --white-30: oklch(1 0 0 / 30%);
+  --white-60: oklch(1 0 0 / 60%);
+  --white-90: oklch(1 0 0 / 90%);
+  --white-100: oklch(1 0 0);
+
+  --text: oklch(0.20 0 0);
+  --text-secondary: oklch(0.40 0 0);
+  --text-tertiary: oklch(0.60 0 0);
+  --text-inverse: oklch(0.98 0 0);
+
+  --bg: oklch(0.98 0 0);
+  --bg-secondary: oklch(0.95 0 0);
+
+  --border: oklch(0.90 0 0);
+
+  /* 色阶卡片圆角 */
+  --radius-card: 8px;
+}
+
+/* ========================================
+   基础样式
+   ======================================== */
+@layer base {
+  body {
+    background-color: oklch(1 0 0);
+    background-image: repeating-conic-gradient(
+      oklch(.961 0 0) 0 90deg,
+      oklch(1 0 0) 90deg 180deg
+    );
+    background-size: 16px 16px;
+    color: var(--text);
+    font-family: var(--font-sans);
+  }
+}
+
+/* 拖拽列宽期间禁用整个表格的悬停态 */
+[data-slot="data-table"][data-resizing="true"] [data-slot="cell"] {
+  pointer-events: none !important;
+}
+
+/* ========================================
+   Sonner Toast - Vdesign 设计系统规范
+   sonner 运行时注入的 [data-styled='true'] 选择器特异性高于 class，
+   因此字号、行高等核心属性需要 !important
+   ======================================== */
+
+/* 容器 */
+.vdesign-toaster {
+  font-family: var(--font-sans);
+}
+
+/* Toast 卡片 - base 尺寸 */
+.vdesign-toast {
+  font-size: 14px !important;
+  line-height: 24px !important;
+  padding: 8px 12px;
+  border-radius: 8px;
+  gap: 8px;
+  background-color: var(--white-100);
+  border: 1px solid var(--neutral-2);
+  color: var(--black-85);
+  box-shadow: none;
+}
+
+.vdesign-toast [data-icon] {
+  height: 16px;
+  width: 16px;
+}
+
+/* Toast 卡片 - lg 尺寸 */
+.vdesign-toast.vdesign-toast-lg {
+  font-size: 16px !important;
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+
+.vdesign-toast.vdesign-toast-lg [data-icon] {
+  height: 18px;
+  width: 18px;
+}
+
+/* 标题 */
+.vdesign-toast-title {
+  font-weight: 500;
+  line-height: 24px !important;
+  color: inherit;
+}
+
+/* 描述 */
+.vdesign-toast-description {
+  color: var(--black-55);
+}
+
+/* 语义色 */
+.vdesign-toast-success {
+  background-color: var(--success-1);
+  border-color: var(--success-3);
+  color: var(--success-6);
+}
+
+.vdesign-toast-info {
+  background-color: var(--brand-1);
+  border-color: var(--brand-3);
+  color: var(--brand-6);
+}
+
+.vdesign-toast-warning {
+  background-color: var(--warning-1);
+  border-color: var(--warning-3);
+  color: var(--warning-6);
+}
+
+.vdesign-toast-error {
+  background-color: var(--error-1);
+  border-color: var(--error-3);
+  color: var(--error-6);
+}

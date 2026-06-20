@@ -164,15 +164,6 @@ export function CardGrid({ cols = 6, children }: CardGridProps) {
   return <div className={`grid ${gridClass[cols]} gap-4`}>{children}</div>
 }
 
-// 纯展示表格容器组件：自适应内容宽度，不超过父容器
-export function DemoTableWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="shrink min-h-0 bg-white-100 overflow-auto overscroll-none border border-neutral-2 w-fit max-w-full">
-      {children}
-    </div>
-  )
-}
-
 // 区块标题组件
 export function SectionTitle({
   title,

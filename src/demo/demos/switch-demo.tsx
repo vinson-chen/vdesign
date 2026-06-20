@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch"
 import { DataTable } from "@/components/ui/data-table"
 import type { TableData, CellRendererProps } from "@/types/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { SectionTitle, DemoTableWrapper, getDisplaySize } from "./shared"
+import { SectionTitle, getDisplaySize } from "./shared"
 import type { SlotConfig } from "./shared"
 
 // ============================================
@@ -128,14 +128,12 @@ export function SwitchPage() {
   return (
     <div className="flex flex-col min-h-0 max-h-[calc(100vh-64px)]">
       <SectionTitle title="开关 Switch" />
-      <DemoTableWrapper>
-        <DataTable
+              <DataTable
           data={tableData}
-          variant="plain"
+          variant="base" contained
           cellRenderers={cellRenderers}
           readOnly
         />
-      </DemoTableWrapper>
-    </div>
+          </div>
   )
 }
