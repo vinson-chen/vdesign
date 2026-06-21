@@ -2,7 +2,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { TableProvider, useTable, useTableData, useTableState, useTableActions, useFirstDataColumn, CellRenderersContext } from "@/hooks"
-import type { TableData, CellType, GroupedData, RowData, CellRendererRegistry } from "@/types/table"
+import type { TableData, CellType, GroupedData, RowData, CellRendererRegistry, DataTableHandle } from "@/types/table"
 import { Cell } from "./cell"
 import { Checkbox } from "./checkbox"
 import { Button } from "./button"
@@ -666,7 +666,7 @@ function InsertRow({ rowWidth, showBorder, isHovering, onHoverChange, onInsert, 
   )
 }
 
-interface DataTableProps extends React.ComponentProps<"div">, VariantProps<typeof tableVariants> {
+interface DataTableProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof tableVariants> {
   data: TableData
   cellRenderers?: CellRendererRegistry
   readOnly?: boolean
@@ -674,7 +674,7 @@ interface DataTableProps extends React.ComponentProps<"div">, VariantProps<typeo
   contained?: boolean
 }
 
-function DataTable({ className, variant, radius, data, cellRenderers, readOnly, contained = false, ...props }: DataTableProps) {
+const DataTable = React.forwardRef<DataTableHandle, DataTableProps>(function DataTable({ className, variant, radius, data, cellRenderers, readOnly, contained = false, ...props }, ref) {
   // contained 模式下，边框和圆角提升到外层滚动容器，表格内部不透出边框
   const wrapperClass = contained
     ? tableVariants({ variant, radius })
@@ -683,7 +683,7 @@ function DataTable({ className, variant, radius, data, cellRenderers, readOnly, 
   const innerRadius = contained ? "none" as const : radius
 
   const inner = (
-    <DataTableInner className={className} variant={innerVariant} radius={innerRadius} {...props} />
+    <DataTableInner ref={ref} className={className} variant={innerVariant} radius={innerRadius} {...props} />
   )
   return (
     <TableProvider data={data} cellRenderers={cellRenderers} readOnly={readOnly}>
@@ -698,20 +698,26 @@ function DataTable({ className, variant, radius, data, cellRenderers, readOnly, 
       </TooltipProvider>
     </TableProvider>
   )
-}
+})
 
 // 标记表头编辑面板是否打开，用于保持选中列状态
 const HeaderPopoverOpenRefContext = React.createContext<React.MutableRefObject<boolean> | null>(null)
 
-function DataTableInner({
+const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof tableVariants> & { slotId?: string }>(function DataTableInner({
   className,
   variant,
   radius,
   slotId,
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof tableVariants> & { slotId?: string }) {
+}, ref) {
   const { data, state, actions } = useTable()
   const id = React.useId()
+
+  // 对外暴露撤回/恢复操作句柄
+  React.useImperativeHandle(ref, () => ({
+    undo: actions.undo,
+    redo: actions.redo,
+  }), [actions.undo, actions.redo])
 
   // 悬停列边缘状态
   const [hoveringColumnId, setHoveringColumnId] = React.useState<string | null>(null)
@@ -1348,6 +1354,50 @@ function DataTableInner({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [state.lockedCellId, state.editingCellId, actions, navigateLockedCell, getLockedCellType, getLockedCellValue])
 
+  // 撤回/恢复快捷键
+  // 追踪表格是否处于活跃状态（最近一次 mousedown 在表格内）
+  const tableActiveRef = React.useRef(false)
+
+  React.useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      const inTable = tableRef.current?.contains(e.target as Node) ?? false
+      if (inTable) {
+        tableActiveRef.current = true
+      } else {
+        // 仅当点击外部交互元素时才让出控制权；
+        // 点击 body/main/div/span 等钝元素保持活跃（如关闭弹窗、空白区域点击）
+        const el = e.target as HTMLElement
+        if (el.closest('button, a, input, select, textarea, [role="button"], [data-interactive]')) {
+          tableActiveRef.current = false
+        }
+      }
+    }
+
+    const handleUndoRedo = (e: KeyboardEvent) => {
+      if (!tableActiveRef.current) return
+      if (state.editingCellId) return
+      const el = document.activeElement as HTMLElement | null
+      if (el?.closest('input, textarea, select')) return
+
+      const mod = e.metaKey || e.ctrlKey
+      const key = e.key.toLowerCase()
+      if (mod && key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        actions.undo()
+      } else if (mod && key === 'z' && e.shiftKey) {
+        e.preventDefault()
+        actions.redo()
+      }
+    }
+
+    document.addEventListener('mousedown', handleMouseDown)
+    document.addEventListener('keydown', handleUndoRedo)
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown)
+      document.removeEventListener('keydown', handleUndoRedo)
+    }
+  }, [state.editingCellId, actions])
+
   // 监听 document 点击，点击表格外部时清空选中列和锁定态
   const tableRef = React.useRef<HTMLDivElement>(null)
 
@@ -1586,6 +1636,7 @@ function DataTableInner({
     </div>
     </HeaderPopoverOpenRefContext.Provider>
   )
-}
+})
 
 export { DataTable, tableVariants }
+export type { DataTableHandle }

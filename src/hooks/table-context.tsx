@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { TableContextValue, TableState, TableActions, TableData, ColumnDef, CellData, RowData, CellType, CellRendererRegistry } from "@/types/table"
+import type { TableContextValue, TableState, TableActions, TableData, ColumnDef, CellData, RowData, CellType, CellRendererRegistry, TableSnapshot } from "@/types/table"
 import { defaultCellRenderers } from "@/components/ui/cell-renderers"
 
 // 拆分为 3 个独立 Context，减少不相关状态变化引起的重渲染
@@ -116,6 +116,80 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     }
   }, [isReadOnly])
 
+  // —— 撤回/恢复 ——
+  const columnsRef = React.useRef(columns)
+  columnsRef.current = columns
+  const rowsRef = React.useRef(rows)
+  rowsRef.current = rows
+  const hiddenColumnsRef = React.useRef(hiddenColumns)
+  hiddenColumnsRef.current = hiddenColumns
+  const frozenColumnsRef = React.useRef(frozenColumns)
+  frozenColumnsRef.current = frozenColumns
+  const groupColumnIdRef = React.useRef(groupColumnId)
+  groupColumnIdRef.current = groupColumnId
+  const collapsedGroupsRef = React.useRef(collapsedGroups)
+  collapsedGroupsRef.current = collapsedGroups
+  const columnWidthsRef = React.useRef(columnWidths)
+  columnWidthsRef.current = columnWidths
+
+  const undoStackRef = React.useRef<TableSnapshot[]>([])
+  const redoStackRef = React.useRef<TableSnapshot[]>([])
+
+  // 外部 data 变更时清空撤回历史
+  React.useEffect(() => {
+    undoStackRef.current = []
+    redoStackRef.current = []
+  }, [data])
+
+  // 拍当前状态快照
+  const currentSnapshot = React.useCallback((): TableSnapshot => ({
+    columns: columnsRef.current,
+    rows: rowsRef.current,
+    hiddenColumns: [...hiddenColumnsRef.current],
+    frozenColumns: [...frozenColumnsRef.current],
+    groupColumnId: groupColumnIdRef.current,
+    collapsedGroups: [...collapsedGroupsRef.current],
+    columnWidths: { ...columnWidthsRef.current },
+  }), [])
+
+  // 操作前拍快照，推入撤回栈
+  const pushUndo = React.useCallback(() => {
+    undoStackRef.current = [...undoStackRef.current, currentSnapshot()].slice(-20)
+    redoStackRef.current = []
+  }, [currentSnapshot])
+
+  const restoreSnapshot = React.useCallback((snapshot: TableSnapshot) => {
+    setColumns(snapshot.columns)
+    setRows(snapshot.rows)
+    setHiddenColumns(new Set(snapshot.hiddenColumns))
+    setFrozenColumns(new Set(snapshot.frozenColumns))
+    setGroupColumnId(snapshot.groupColumnId)
+    setCollapsedGroups(new Set(snapshot.collapsedGroups))
+    setColumnWidths({ ...snapshot.columnWidths })
+    setSelectedColumnId(null)
+    setLockedCellId(null)
+    setEditingCellId(null)
+    setEditingValue("")
+  }, [])
+
+  const undo = React.useCallback(() => {
+    const stack = undoStackRef.current
+    if (stack.length === 0) return
+    const snapshot = stack[stack.length - 1]!
+    redoStackRef.current = [...redoStackRef.current, currentSnapshot()]
+    undoStackRef.current = stack.slice(0, -1)
+    restoreSnapshot(snapshot)
+  }, [currentSnapshot, restoreSnapshot])
+
+  const redo = React.useCallback(() => {
+    const stack = redoStackRef.current
+    if (stack.length === 0) return
+    const snapshot = stack[stack.length - 1]!
+    undoStackRef.current = [...undoStackRef.current, currentSnapshot()].slice(-20)
+    redoStackRef.current = stack.slice(0, -1)
+    restoreSnapshot(snapshot)
+  }, [currentSnapshot, restoreSnapshot])
+
   // 锁定状态（焦点单元格）
   const [lockedCellId, setLockedCellId] = React.useState<string | null>(null)
 
@@ -164,6 +238,10 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
     // 判断是列标题还是单元格
     const isColumnHeader = columns.some((col) => col.id === editingCellId)
+    // 分组标题编辑由 updateGroupValues 负责撤回，此处不重复拍快照
+    if (!editingCellId.startsWith('group-header-')) {
+      pushUndo()
+    }
 
     if (isColumnHeader) {
       setColumns((prev) =>
@@ -198,6 +276,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
   // 单元格值更新（由渲染器通过 onChange 触发）
   // 优化：只更新目标行，跳过无关行
   const updateCellValue = React.useCallback((cellId: string, value: unknown) => {
+    pushUndo()
     setRows((prev) => prev.map(row => {
       // 快速跳过不包含目标 cellId 的行
       const cellIndex = row.cells.findIndex(c => c.id === cellId)
@@ -238,6 +317,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     const index = columns.findIndex((col) => col.id === columnId)
     if (index === -1) return
 
+    pushUndo()
     const newColumnId = generateId()
     const newColumn: ColumnDef = {
       id: newColumnId,
@@ -276,6 +356,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     const index = columns.findIndex((col) => col.id === columnId)
     if (index === -1) return
 
+    pushUndo()
     const newColumnId = generateId()
     const newColumn: ColumnDef = {
       id: newColumnId,
@@ -311,10 +392,12 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
   }, [columns])
 
   const hideColumn = React.useCallback((columnId: string) => {
+    pushUndo()
     setHiddenColumns((prev) => new Set(prev).add(columnId))
   }, [])
 
   const toggleColumnVisibility = React.useCallback((columnId: string) => {
+    pushUndo()
     setHiddenColumns((prev) => {
       const next = new Set(prev)
       if (next.has(columnId)) {
@@ -330,6 +413,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     const index = columns.findIndex((col) => col.id === columnId)
     if (index === -1) return
 
+    pushUndo()
     setColumns((prev) => prev.filter((col) => col.id !== columnId))
     setColumnWidths((prev) => {
       const newWidths = { ...prev }
@@ -353,6 +437,8 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     const index = columns.findIndex((col) => col.id === columnId)
     if (index === -1) return
 
+    pushUndo()
+
     // 更新列类型
     setColumns((prev) =>
       prev.map((col) =>
@@ -373,6 +459,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 直接更新列标题（不触发编辑状态）
   const updateColumnTitle = React.useCallback((columnId: string, title: string) => {
+    pushUndo()
     setColumns((prev) =>
       prev.map((col) =>
         col.id === columnId ? { ...col, title } : col
@@ -382,6 +469,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 更新列配置（options）
   const updateColumnOptions = React.useCallback((columnId: string, options: Record<string, unknown>) => {
+    pushUndo()
     setColumns((prev) =>
       prev.map((col) =>
         col.id === columnId ? { ...col, options } : col
@@ -394,6 +482,8 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     const columnIndex = columns.findIndex((col) => col.id === columnId)
     if (columnIndex === -1) return
 
+    pushUndo()
+
     // 获取此列及左侧所有列的 ID
     const columnsToFreeze = columns.slice(0, columnIndex + 1).map((col) => col.id)
     setFrozenColumns(new Set(columnsToFreeze))
@@ -401,6 +491,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 设置分组列
   const setGroupColumn = React.useCallback((columnId: string | null) => {
+    pushUndo()
     setGroupColumnId(columnId)
     if (columnId) {
       // 重新计算分组值并默认展开第一个，收起其余
@@ -445,6 +536,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 切换分组展开/收起
   const toggleGroupCollapse = React.useCallback((groupValue: string) => {
+    pushUndo()
     setCollapsedGroups((prev) => {
       const next = new Set(prev)
       if (next.has(groupValue)) {
@@ -458,12 +550,14 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 展开所有分组
   const expandAllGroups = React.useCallback(() => {
+    pushUndo()
     setCollapsedGroups(new Set())
   }, [])
 
   // 收起所有分组
   const collapseAllGroups = React.useCallback(() => {
     if (!groupColumnId) return
+    pushUndo()
     const groupColumnIndex = columns.findIndex(col => col.id === groupColumnId)
     if (groupColumnIndex === -1) return
     const allGroupValues = new Set(rows.map(row => String(row.cells[groupColumnIndex]?.value ?? "")))
@@ -512,6 +606,8 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     const groupRowIndex = columns.findIndex(col => col.id === groupColumnId)
     if (groupRowIndex === -1) return
 
+    pushUndo()
+
     const newRowId = generateId()
     const newCells: CellData[] = columns.map((col) =>
       createCellFromColumn(col, newRowId, col.id === groupColumnId ? { value: groupValue } : undefined)
@@ -538,6 +634,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 非分组情况下在表格底部插入新行
   const insertRow = React.useCallback(() => {
+    pushUndo()
     const newRowId = generateId()
     const newCells: CellData[] = columns.map((col) =>
       createCellFromColumn(col, newRowId)
@@ -551,6 +648,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     const groupRowIndex = columns.findIndex(col => col.id === groupColumnId)
     if (groupRowIndex === -1) return
 
+    pushUndo()
     setRows((prev) =>
       prev.map((row) => {
         const cell = row.cells[groupRowIndex]
@@ -591,6 +689,8 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     const targetIndex = columns.findIndex(col => col.id === targetColumnId)
     if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) return
 
+    pushUndo()
+
     // 计算最终插入位置
     const toIndex = insertPosition === 'right' ? targetIndex + 1 : targetIndex
     // 向右拖：toIndex - 1（因为移除源列后索引会位移）
@@ -629,6 +729,7 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 行列数调整
   const setDimension = React.useCallback((targetRowCount: number, targetColumnCount: number) => {
+    pushUndo()
     // 计算排除列数（仅 checkbox）
     const hasCheckbox = columns.some(col => col.type === "checkbox")
     const excludeColumnCount = hasCheckbox ? 1 : 0
@@ -757,6 +858,8 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
     moveColumnOrder,
     setDimension,
     toggleReadOnly,
+    undo,
+    redo,
   }
 
   // Memo 化：过滤隐藏列后的数据

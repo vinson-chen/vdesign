@@ -187,6 +187,9 @@ export interface TableActions {
   setDimension: (targetRowCount: number, targetColumnCount: number) => void
   // 编辑/只读模式切换
   toggleReadOnly: () => void
+  // 撤回/恢复
+  undo: () => void
+  redo: () => void
 }
 
 // 表格 Context 类型
@@ -201,4 +204,21 @@ export interface TableContextValue {
 export interface GroupedData {
   groupValue: string
   rows: RowData[]
+}
+
+/** 表格状态快照，用于撤回/恢复 */
+export interface TableSnapshot {
+  columns: ColumnDef[]
+  rows: RowData[]
+  hiddenColumns: string[]
+  frozenColumns: string[]
+  groupColumnId: string | null
+  collapsedGroups: string[]
+  columnWidths: Record<string, number>
+}
+
+/** DataTable 对外暴露的操作句柄（通过 ref 访问） */
+export interface DataTableHandle {
+  undo: () => void
+  redo: () => void
 }
