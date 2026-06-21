@@ -107,6 +107,8 @@ export interface TableData {
   rows: RowData[]
   hiddenColumns?: Set<string>
   groupColumnId?: string
+  // 分组初始收起状态：外部可传入缓存的收起分组值，不传则默认首组展开其余收起
+  initialCollapsedGroups?: string[]
   // 列 ID → ColumnDef 的映射，用于快速查找（替代 Array.find）
   columnMap?: Map<string, ColumnDef>
   // 原始行数据（含隐藏列的单元格），用于分组计算等需要完整数据的场景

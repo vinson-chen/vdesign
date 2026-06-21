@@ -77,8 +77,9 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
 
   // 分组列
   const [groupColumnId, setGroupColumnId] = React.useState<string | null>(() => data.groupColumnId ?? null)
-  // 收起的分组：默认展开第一个分组，收起其他分组
+  // 收起的分组：优先使用外部传入的缓存值，否则默认展开第一个分组，收起其他分组
   const [collapsedGroups, setCollapsedGroups] = React.useState<Set<string>>(() => {
+    if (data.initialCollapsedGroups) return new Set(data.initialCollapsedGroups)
     if (!data.groupColumnId) return new Set()
     // 找到分组列索引
     const groupColumnIndex = data.columns.findIndex(col => col.id === data.groupColumnId)
