@@ -67,6 +67,7 @@ export interface TableData {
     rows: RowData[];
     hiddenColumns?: Set<string>;
     groupColumnId?: string;
+    initialCollapsedGroups?: string[];
     columnMap?: Map<string, ColumnDef>;
     allRows?: RowData[];
 }
@@ -117,6 +118,8 @@ export interface TableActions {
     moveColumnOrder: (sourceColumnId: string, targetColumnId: string, insertPosition: 'left' | 'right') => void;
     setDimension: (targetRowCount: number, targetColumnCount: number) => void;
     toggleReadOnly: () => void;
+    undo: () => void;
+    redo: () => void;
 }
 export interface TableContextValue {
     state: TableState;
@@ -127,4 +130,19 @@ export interface TableContextValue {
 export interface GroupedData {
     groupValue: string;
     rows: RowData[];
+}
+/** 表格状态快照，用于撤回/恢复 */
+export interface TableSnapshot {
+    columns: ColumnDef[];
+    rows: RowData[];
+    hiddenColumns: string[];
+    frozenColumns: string[];
+    groupColumnId: string | null;
+    collapsedGroups: string[];
+    columnWidths: Record<string, number>;
+}
+/** DataTable 对外暴露的操作句柄（通过 ref 访问） */
+export interface DataTableHandle {
+    undo: () => void;
+    redo: () => void;
 }
