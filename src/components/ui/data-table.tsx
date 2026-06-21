@@ -672,9 +672,24 @@ interface DataTableProps extends React.HTMLAttributes<HTMLDivElement>, VariantPr
   readOnly?: boolean
   /** 是否自带滚动容器（含边框+圆角），默认 false */
   contained?: boolean
+  /** 分组收起状态变更回调，业务层可用于持久化（如 localStorage） */
+  onCollapsedGroupsChange?: (groups: string[]) => void
 }
 
-const DataTable = React.forwardRef<DataTableHandle, DataTableProps>(function DataTable({ className, variant, radius, data, cellRenderers, readOnly, contained = false, ...props }, ref) {
+// 监听 collapsedGroups 变更并通知业务层
+function CollapsedGroupsNotifier({ onChange }: { onChange?: (groups: string[]) => void }) {
+  const state = useTableState()
+  const prevRef = React.useRef(state.collapsedGroups)
+  React.useEffect(() => {
+    if (prevRef.current !== state.collapsedGroups) {
+      prevRef.current = state.collapsedGroups
+      onChange?.(Array.from(state.collapsedGroups))
+    }
+  }, [state.collapsedGroups, onChange])
+  return null
+}
+
+const DataTable = React.forwardRef<DataTableHandle, DataTableProps>(function DataTable({ className, variant, radius, data, cellRenderers, readOnly, contained = false, onCollapsedGroupsChange, ...props }, ref) {
   // contained 模式下，边框和圆角提升到外层滚动容器，表格内部不透出边框
   const wrapperClass = contained
     ? tableVariants({ variant, radius })
@@ -687,6 +702,7 @@ const DataTable = React.forwardRef<DataTableHandle, DataTableProps>(function Dat
   )
   return (
     <TableProvider data={data} cellRenderers={cellRenderers} readOnly={readOnly}>
+      <CollapsedGroupsNotifier onChange={onCollapsedGroupsChange} />
       <TooltipProvider>
         {contained ? (
           <div className={cn("max-h-full min-h-0 overflow-auto overscroll-none w-fit max-w-full", wrapperClass)}>

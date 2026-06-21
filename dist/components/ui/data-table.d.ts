@@ -11,6 +11,8 @@ interface DataTableProps extends React.HTMLAttributes<HTMLDivElement>, VariantPr
     readOnly?: boolean;
     /** 是否自带滚动容器（含边框+圆角），默认 false */
     contained?: boolean;
+    /** 分组收起状态变更回调，业务层可用于持久化（如 localStorage） */
+    onCollapsedGroupsChange?: (groups: string[]) => void;
 }
 declare const DataTable: React.ForwardRefExoticComponent<DataTableProps & React.RefAttributes<DataTableHandle>>;
 export { DataTable, tableVariants };
