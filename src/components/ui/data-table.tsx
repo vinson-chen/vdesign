@@ -689,7 +689,7 @@ function DataTable({ className, variant, radius, data, cellRenderers, readOnly, 
     <TableProvider data={data} cellRenderers={cellRenderers} readOnly={readOnly}>
       <TooltipProvider>
         {contained ? (
-          <div className={cn("h-full min-h-0 overflow-auto overscroll-none w-fit max-w-full", wrapperClass)}>
+          <div className={cn("max-h-full min-h-0 overflow-auto overscroll-none w-fit max-w-full", wrapperClass)}>
             {inner}
           </div>
         ) : (

@@ -11807,7 +11807,7 @@ function ds({ rowWidth: e, showBorder: t, isHovering: n, onHoverChange: o, onIns
 }
 function Dg({ className: e, variant: t, radius: n, data: o, cellRenderers: r, readOnly: i, contained: s = !1, ...a }) {
   const c = s ? cl({ variant: t, radius: n }) : "", d = s ? "plain" : t, f = s ? "none" : n, p = /* @__PURE__ */ u.jsx(Eg, { className: e, variant: d, radius: f, ...a });
-  return /* @__PURE__ */ u.jsx(dg, { data: o, cellRenderers: r, readOnly: i, children: /* @__PURE__ */ u.jsx(mh, { children: s ? /* @__PURE__ */ u.jsx("div", { className: oe("h-full min-h-0 overflow-auto overscroll-none w-fit max-w-full", c), children: p }) : p }) });
+  return /* @__PURE__ */ u.jsx(dg, { data: o, cellRenderers: r, readOnly: i, children: /* @__PURE__ */ u.jsx(mh, { children: s ? /* @__PURE__ */ u.jsx("div", { className: oe("max-h-full min-h-0 overflow-auto overscroll-none w-fit max-w-full", c), children: p }) : p }) });
 }
 const dl = l.createContext(null);
 function Eg({
