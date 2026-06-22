@@ -11,4 +11,4 @@ export { Table, tableVariants } from "./components/ui/table"
 export { DataTable, tableVariants as dataTableVariants } from "./components/ui/data-table"
 
 // 类型导出
-export type { TableData, ColumnDef, CellData, RowData, CellType } from "./types/table"
+export type { TableData, ColumnDef, CellData, RowData, CellType, CellRendererProps, CellRendererRegistry } from "./types/table"

@@ -68,7 +68,7 @@ function TruncatedText({ children, className, onDoubleClick, onClick }: { childr
 }
 
 // 文本单元格渲染器
-function TextCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, readOnly }: CellRendererProps) {
+function TextCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly }: CellRendererProps) {
   if (isEditing) {
     return (
       <input
@@ -77,9 +77,14 @@ function TextCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdat
         onChange={(e) => onUpdateEditingValue?.(e.target.value)}
         onBlur={() => onFinishEdit?.()}
         onKeyDown={(e) => {
-          // Enter 和 Escape 由全局键盘监听器统一处理
-          if (e.key === "Enter") e.preventDefault()
-          if (e.key === "Escape") e.preventDefault()
+          if (e.key === "Enter") {
+            e.preventDefault()
+            onFinishEdit?.()
+          }
+          if (e.key === "Escape") {
+            e.preventDefault()
+            onCancelEdit?.()
+          }
         }}
         onFocus={(e) => e.target.select()}
         className="absolute inset-0 bg-transparent border-none outline-none p-2 text-inherit font-inherit overflow-hidden"
@@ -99,7 +104,7 @@ function TextCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdat
 }
 
 // 数字单元格渲染器（只能输入数字，右对齐）
-function NumberCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, readOnly }: CellRendererProps) {
+function NumberCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly }: CellRendererProps) {
   if (isEditing) {
     return (
       <input
@@ -115,8 +120,14 @@ function NumberCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpd
         }}
         onBlur={() => onFinishEdit?.()}
         onKeyDown={(e) => {
-          if (e.key === "Enter") e.preventDefault()
-          if (e.key === "Escape") e.preventDefault()
+          if (e.key === "Enter") {
+            e.preventDefault()
+            onFinishEdit?.()
+          }
+          if (e.key === "Escape") {
+            e.preventDefault()
+            onCancelEdit?.()
+          }
         }}
         onFocus={(e) => e.target.select()}
         className="absolute inset-0 bg-transparent border-none outline-none p-2 text-inherit font-inherit overflow-hidden text-right"
@@ -906,6 +917,7 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange, 
 const defaultCellRenderers: Record<string, React.ComponentType<CellRendererProps>> = {
   text: TextCellRenderer,
   number: NumberCellRenderer,
+  editable: TextCellRenderer, // editable 复用文本渲染器
   input: InputCellRenderer,
   select: SelectEditableCellRenderer, // 使用新版可编辑渲染器
   button: ButtonCellRenderer,
