@@ -2,7 +2,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { TableProvider, useTable, useTableData, useTableState, useTableActions, useFirstDataColumn, CellRenderersContext } from "@/hooks"
-import type { TableData, CellType, GroupedData, RowData, CellRendererRegistry, DataTableHandle } from "@/types/table"
+import type { TableData, CellType, GroupedData, RowData, CellRendererRegistry, DataTableHandle, CellEditEvent } from "@/types/table"
 import { Cell } from "./cell"
 import { Checkbox } from "./checkbox"
 import { Button } from "./button"
@@ -674,6 +674,8 @@ interface DataTableProps extends React.HTMLAttributes<HTMLDivElement>, VariantPr
   contained?: boolean
   /** 分组收起状态变更回调，业务层可用于持久化（如 localStorage） */
   onCollapsedGroupsChange?: (groups: string[]) => void
+  /** 单元格值变更回调，编辑完成时触发 */
+  onCellValueChange?: (event: CellEditEvent) => void
 }
 
 // 监听 collapsedGroups 变更并通知业务层
@@ -689,7 +691,7 @@ function CollapsedGroupsNotifier({ onChange }: { onChange?: (groups: string[]) =
   return null
 }
 
-const DataTable = React.forwardRef<DataTableHandle, DataTableProps>(function DataTable({ className, variant, radius, data, cellRenderers, readOnly, contained = false, onCollapsedGroupsChange, ...props }, ref) {
+const DataTable = React.forwardRef<DataTableHandle, DataTableProps>(function DataTable({ className, variant, radius, data, cellRenderers, readOnly, contained = false, onCollapsedGroupsChange, onCellValueChange, ...props }, ref) {
   // contained 模式下，边框和圆角提升到外层滚动容器，表格内部不透出边框
   const wrapperClass = contained
     ? tableVariants({ variant, radius })
@@ -701,7 +703,7 @@ const DataTable = React.forwardRef<DataTableHandle, DataTableProps>(function Dat
     <DataTableInner ref={ref} className={className} variant={innerVariant} radius={innerRadius} {...props} />
   )
   return (
-    <TableProvider data={data} cellRenderers={cellRenderers} readOnly={readOnly}>
+    <TableProvider data={data} cellRenderers={cellRenderers} readOnly={readOnly} onCellValueChange={onCellValueChange}>
       <CollapsedGroupsNotifier onChange={onCollapsedGroupsChange} />
       <TooltipProvider>
         {contained ? (

@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { TableContextValue, TableState, TableActions, TableData, ColumnDef, CellData, RowData, CellType, CellRendererRegistry, TableSnapshot } from "@/types/table"
+import type { TableContextValue, TableState, TableActions, TableData, ColumnDef, CellData, RowData, CellType, CellRendererRegistry, TableSnapshot, CellEditEvent } from "@/types/table"
 import { defaultCellRenderers } from "@/components/ui/cell-renderers"
 
 // 拆分为 3 个独立 Context，减少不相关状态变化引起的重渲染
@@ -41,10 +41,12 @@ interface TableProviderProps {
   data: TableData
   cellRenderers?: CellRendererRegistry
   readOnly?: boolean
+  /** 单元格值变更回调，编辑完成时触发 */
+  onCellValueChange?: (event: CellEditEvent) => void
   children: React.ReactNode
 }
 
-function TableProvider({ data, cellRenderers, readOnly, children }: TableProviderProps) {
+function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, children }: TableProviderProps) {
   // 合并内置渲染器和自定义渲染器
   const mergedRenderers = React.useMemo(
     () => ({ ...defaultCellRenderers, ...cellRenderers }),
@@ -250,19 +252,45 @@ function TableProvider({ data, cellRenderers, readOnly, children }: TableProvide
         )
       )
     } else {
-      setRows((prev) =>
-        prev.map((row) => ({
+      // 找到单元格对应的 rowId、columnId 和 oldValue
+      let rowId = ""
+      let columnId = ""
+      let oldValue: string | number | boolean = ""
+
+      setRows((prev) => {
+        const result = prev.map((row) => ({
           ...row,
-          cells: row.cells.map((cell) =>
-            cell.id === editingCellId ? { ...cell, value: editingValue } : cell
-          ),
+          cells: row.cells.map((cell) => {
+            if (cell.id === editingCellId) {
+              rowId = row.id
+              // 通过列索引找到 columnId
+              const cellIndex = row.cells.findIndex(c => c.id === editingCellId)
+              columnId = columns[cellIndex]?.id ?? ""
+              oldValue = cell.value as string | number | boolean
+              return { ...cell, value: editingValue }
+            }
+            return cell
+          }),
         }))
-      )
+        return result
+      })
+
+      // 触发回调（异步触发确保 state 已更新）
+      if (onCellValueChange && rowId && columnId) {
+        const event: CellEditEvent = {
+          cellId: editingCellId,
+          rowId,
+          columnId,
+          newValue: editingValue,
+          oldValue,
+        }
+        setTimeout(() => onCellValueChange(event), 0)
+      }
     }
 
     setEditingCellId(null)
     setEditingValue("")
-  }, [editingCellId, editingValue, columns])
+  }, [editingCellId, editingValue, columns, onCellValueChange, pushUndo])
 
   const cancelEdit = React.useCallback(() => {
     setEditingCellId(null)

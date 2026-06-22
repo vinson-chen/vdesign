@@ -222,3 +222,12 @@ export interface DataTableHandle {
   undo: () => void
   redo: () => void
 }
+
+/** 单元格编辑事件 */
+export interface CellEditEvent {
+  cellId: string
+  rowId: string
+  columnId: string
+  newValue: string | number | boolean
+  oldValue: string | number | boolean
+}
