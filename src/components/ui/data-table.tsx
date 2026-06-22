@@ -1225,66 +1225,38 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
   React.useEffect(() => {
     if (!state.lockedCellId) return
 
+    // composition 状态跟踪（中文输入法）
+    let isComposing = false
+
+    const handleCompositionStart = () => {
+      isComposing = true
+    }
+
+    const handleCompositionEnd = () => {
+      isComposing = false
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 编辑态时，让渲染器的 input 自己处理 Enter/Escape
+      // 全局监听器不干预，避免双重调用或时序问题
+      if (state.editingCellId) {
+        // 只处理 Escape 取消编辑（渲染器已经处理了，但全局监听器需要同步状态）
+        if (e.key === 'Escape') {
+          // 不调用 preventDefault，渲染器已经处理了
+          actions.cancelEdit()
+          return
+        }
+        // Enter 由渲染器处理，全局监听器不干预
+        // 其他按键在编辑态不处理
+        return
+      }
+
       // 检查焦点是否在可交互元素上（输入框、选择框等）
       const activeElement = document.activeElement as HTMLElement
       const isInteractiveElement = activeElement.closest('input, select, textarea, [data-slot="select-trigger"], [data-slot="select-editable"]')
 
-      // 如果焦点在可交互元素上，不处理键盘快捷键（除了 Escape 和 Enter）
-      if (isInteractiveElement && e.key !== 'Escape' && e.key !== 'Enter') {
-        return
-      }
-
-      // 输入列单元格：焦点在 Input 上时，Enter → 保存并下移/退出
-      if (isInteractiveElement && e.key === 'Enter') {
-        const cellType = getLockedCellType()
-        if (cellType === 'input') {
-          if (e.preventDefault) e.preventDefault()
-          // 失焦保存
-          if ((activeElement as HTMLInputElement).blur) {
-            (activeElement as HTMLInputElement).blur()
-          }
-          // 检查是否是最后一行
-          const allRows = state.groupColumnId
-            ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
-            : data.rows
-          const pos = getLockedCellPosition()
-          if (pos && pos.rowIndex === allRows.length - 1) {
-            // 最后一行 → 退出锁定态
-            actions.lockCell(null)
-          } else {
-            // 非最后一行 → 移动到下一行
-            navigateLockedCell('ArrowDown')
-          }
-          return
-        }
-      }
-
-      // 编辑态：Enter 保存并下移/退出，Escape 取消编辑
-      if (state.editingCellId) {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          actions.finishEdit()
-          // 检查是否是最后一行
-          const allRows = state.groupColumnId
-            ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
-            : data.rows
-          const pos = getLockedCellPosition()
-          if (pos && pos.rowIndex === allRows.length - 1) {
-            // 最后一行 → 退出锁定态
-            actions.lockCell(null)
-          } else {
-            // 非最后一行 → 移动到下一行同列单元格
-            navigateLockedCell('ArrowDown')
-          }
-          return
-        }
-        if (e.key === 'Escape') {
-          e.preventDefault()
-          actions.cancelEdit()
-          return
-        }
-        // 其他按键在编辑态不处理
+      // 如果焦点在可交互元素上，不处理键盘快捷键
+      if (isInteractiveElement) {
         return
       }
 
@@ -1313,7 +1285,7 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
 
       // 输入列单元格：Enter 或可打印字符 → 聚焦内部 Input
       if (cellType === 'input' && !state.readOnly) {
-        if (e.key === 'Enter' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey)) {
+        if (e.key === 'Enter' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !isComposing)) {
           e.preventDefault()
           // 查找锁定单元格内的 Input 元素并聚焦
           const lockedCellElement = document.querySelector(`[data-cell-id="${state.lockedCellId}"]`)
@@ -1322,7 +1294,7 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
             if (inputElement) {
               inputElement.focus()
               // 如果是可打印字符（非 Enter），延迟设置值（等待 focus 生效）
-              if (e.key.length === 1 && e.key !== 'Enter') {
+              if (e.key.length === 1 && e.key !== 'Enter' && !isComposing) {
                 setTimeout(() => {
                   // 设置原生值
                   const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
@@ -1347,7 +1319,8 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
       }
 
       // 可打印字符 → 进入编辑态（以该字符为初始值）— readOnly 模式下禁用
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !state.readOnly) {
+      // 判断 composition 状态，避免中文输入法时误触发
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !state.readOnly && !isComposing) {
         if (cellType === 'text' || cellType === 'editable') {
           actions.startEdit(state.lockedCellId!, e.key)
         } else if (cellType === 'number') {
@@ -1368,9 +1341,15 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
       }
     }
 
+    document.addEventListener('compositionstart', handleCompositionStart)
+    document.addEventListener('compositionend', handleCompositionEnd)
     document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [state.lockedCellId, state.editingCellId, actions, navigateLockedCell, getLockedCellType, getLockedCellValue])
+    return () => {
+      document.removeEventListener('compositionstart', handleCompositionStart)
+      document.removeEventListener('compositionend', handleCompositionEnd)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [state.lockedCellId, state.editingCellId, state.readOnly, actions, navigateLockedCell, getLockedCellType, getLockedCellValue])
 
   // 撤回/恢复快捷键
   // 追踪表格是否处于活跃状态（最近一次 mousedown 在表格内）
