@@ -1221,11 +1221,33 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
     return ''
   }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
 
+  // composition 状态跟踪（中文输入法）- 在组件级别持续监听，不依赖锁定态
+  const isComposingRef = React.useRef(false)
+
+  React.useEffect(() => {
+    const handleCompositionStart = () => {
+      isComposingRef.current = true
+    }
+
+    const handleCompositionEnd = () => {
+      isComposingRef.current = false
+    }
+
+    document.addEventListener('compositionstart', handleCompositionStart)
+    document.addEventListener('compositionend', handleCompositionEnd)
+    return () => {
+      document.removeEventListener('compositionstart', handleCompositionStart)
+      document.removeEventListener('compositionend', handleCompositionEnd)
+    }
+  }, [])
+
   // 键盘事件监听
   React.useEffect(() => {
     if (!state.lockedCellId) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 读取 composition 状态（由组件级别监听器更新）
+      const isComposing = isComposingRef.current
       // 编辑态时，让渲染器的 input 自己处理 Enter/Escape
       // 全局监听器不干预，避免双重调用或时序问题
       if (state.editingCellId) {
@@ -1272,10 +1294,6 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
       // 获取锁定单元格类型
       const cellType = getLockedCellType()
 
-      // 使用原生 isComposing 属性判断是否在中文输入法状态
-      // 注意：compositionstart 在第一个字符输入后触发，所以不能依赖事件监听
-      const isComposing = e.isComposing
-
       // 输入列单元格：Enter 或可打印字符 → 聚焦内部 Input
       if (cellType === 'input' && !state.readOnly) {
         if (e.key === 'Enter' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !isComposing)) {
@@ -1312,7 +1330,7 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
       }
 
       // 可打印字符 → 进入编辑态（以该字符为初始值）— readOnly 模式下禁用
-      // 使用原生 isComposing 属性判断中文输入法状态
+      // 判断 composition 状态，避免中文输入法时误触发
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !state.readOnly && !isComposing) {
         if (cellType === 'text' || cellType === 'editable') {
           actions.startEdit(state.lockedCellId!, e.key)
@@ -1335,7 +1353,9 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
     }
 
     document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
   }, [state.lockedCellId, state.editingCellId, state.readOnly, actions, navigateLockedCell, getLockedCellType, getLockedCellValue])
 
   // 撤回/恢复快捷键
