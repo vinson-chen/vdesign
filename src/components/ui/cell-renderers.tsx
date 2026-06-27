@@ -330,9 +330,8 @@ function TextFieldManager({ fields, textFields, onSave }: {
 
 // 数字单元格渲染器（只能输入数字，左对齐，使用 contenteditable）
 // 核心思路：选中态 contentEditable=true（隐藏光标），用户按键直接触发 IME
-function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly, isCellHovering, onSelectCell }: CellRendererProps) {
+function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly }: CellRendererProps) {
   const editorRef = React.useRef<HTMLDivElement>(null)
-  const [open, setOpen] = React.useState(false)
 
   // 跟踪 isEditing 变化 + 标记是否由 onInput 触发编辑转换
   const prevEditingRef = React.useRef(false)
@@ -386,19 +385,7 @@ function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editing
     }
   }, [isEditing, isSelected, editingValue, value, readOnly])
 
-  // 点击图标按钮：进入选中态并打开面板
-  const handleIconButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!isSelected) {
-      onSelectCell?.()
-    }
-    setOpen(true)
-  }
-
-  // 选中态或悬停态时显示图标按钮（只读模式隐藏）
-  const showIconButton = !readOnly && (isSelected || isCellHovering)
-
-  // 选中态或编辑态：都渲染 contenteditable + 图标按钮
+  // 选中态或编辑态：都渲染 contenteditable
   if (isEditing || isSelected) {
     return (
       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -494,33 +481,11 @@ function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editing
             isSelected && !isEditing && "caret-transparent cursor-pointer selection:bg-transparent"
           )}
         />
-
-        {/* 图标按钮：选中态或悬停态时显示 */}
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="iconSm"
-              leftIcon="icon-hashtag"
-              className={cn(
-                "ml-auto shrink-0",
-                !showIconButton && "opacity-0 pointer-events-none"
-              )}
-              onClick={handleIconButtonClick}
-            />
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-[184px]">
-            <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-              {/* 面板内容待定 */}
-              <PopoverLabel>数字列设置</PopoverLabel>
-            </div>
-          </PopoverContent>
-        </Popover>
       </div>
     )
   }
 
-  // 默认态：span 元素 + 图标按钮
+  // 默认态：span 元素
   return (
     <div className="flex items-center gap-2 min-w-0 flex-1">
       <TruncatedText
@@ -529,28 +494,6 @@ function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editing
       >
         {String(value) || " "}
       </TruncatedText>
-
-      {/* 图标按钮：选中态或悬停态时显示 */}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="iconSm"
-            leftIcon="icon-hashtag"
-            className={cn(
-              "ml-auto shrink-0",
-              !showIconButton && "opacity-0 pointer-events-none"
-            )}
-            onClick={handleIconButtonClick}
-          />
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-[184px]">
-          <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-            {/* 面板内容待定 */}
-            <PopoverLabel>数字列设置</PopoverLabel>
-          </div>
-        </PopoverContent>
-      </Popover>
     </div>
   )
 }
