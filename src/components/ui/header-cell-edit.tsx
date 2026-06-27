@@ -4,7 +4,7 @@ import { PopoverEditContent } from "./popover-edit-content"
 import { Button } from "./button"
 import { useTable } from "@/hooks"
 import { PopoverContext } from "./popover"
-import type { CellType, SelectOptionItem, ColumnDef } from "@/types/table"
+import type { CellType, SelectOptionItem, TextFieldItem, ColumnDef } from "@/types/table"
 
 function HeaderCellEditView({
   columnId,
@@ -27,6 +27,7 @@ function HeaderCellEditView({
   const [editedTitle, setEditedTitle] = React.useState(String(value))
   const [editedType, setEditedType] = React.useState<CellType>("text")
   const [selectOptions, setSelectOptions] = React.useState<SelectOptionItem[]>([])
+  const [textFields, setTextFields] = React.useState<TextFieldItem[]>([])
 
   // 同步初始状态
   React.useEffect(() => {
@@ -35,9 +36,17 @@ function HeaderCellEditView({
     if (currentColumnDef?.options) {
       if (currentColumnType === "select") {
         setSelectOptions((currentColumnDef.options.items as SelectOptionItem[]) ?? [])
+        setTextFields([])
+      } else if (currentColumnType === "text") {
+        setTextFields((currentColumnDef.options.fields as TextFieldItem[]) ?? [])
+        setSelectOptions([])
+      } else {
+        setSelectOptions([])
+        setTextFields([])
       }
     } else {
       setSelectOptions([])
+      setTextFields([])
     }
   }, [value, currentColumnType, currentColumnDef])
 
@@ -55,6 +64,10 @@ function HeaderCellEditView({
         // 过滤掉空label的选项
         const validOptions = selectOptions.filter(opt => opt.label.trim())
         newOptions.items = validOptions
+      } else if (editedType === "text") {
+        // 过滤掉空label的字段
+        const validFields = textFields.filter(f => f.label.trim())
+        newOptions.fields = validFields
       }
       actions.updateColumnOptions(columnId, newOptions)
     }
@@ -102,13 +115,21 @@ function HeaderCellEditView({
               { value: "attachment", label: "附件列" },
             ],
           },
-          // 只有单选列才显示选项内容配置
+          // 选择列：选项内容配置
           ...(editedType === "select" ? [{
             label: "",
             type: "content" as const,
             contentType: editedType,
             selectOptions,
             onSelectOptionsChange: setSelectOptions,
+          }] : []),
+          // 文本列：字段内容配置
+          ...(editedType === "text" ? [{
+            label: "",
+            type: "content" as const,
+            contentType: editedType,
+            textFields,
+            onTextFieldsChange: setTextFields,
           }] : []),
         ]}
       />

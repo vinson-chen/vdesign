@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { CellRendererProps, SelectOptionItem, ButtonCellConfig } from "@/types/table"
+import type { CellRendererProps, SelectOptionItem, ButtonCellConfig, TextFieldItem } from "@/types/table"
 import { cn } from "@/lib/utils"
 import { Button } from "./button"
 import { Input } from "./input"
@@ -62,14 +62,24 @@ function TruncatedText({ children, className, onDoubleClick, onClick }: { childr
 
 // 文本单元格渲染器（使用 contenteditable）
 // 核心思路：选中态 contentEditable=true（隐藏光标），用户按键直接触发 IME
-function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly, isCellHovering, onSelectCell }: CellRendererProps) {
+function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly, isCellHovering, onSelectCell, options, cellData, onChange }: CellRendererProps) {
   const editorRef = React.useRef<HTMLDivElement>(null)
   const [open, setOpen] = React.useState(false)
+
+  // 列级字段列表
+  const columnFields = (options?.fields as TextFieldItem[]) ?? []
+  // 单元格级已填内容
+  const cellTextFields = cellData?.textFields ?? []
+
+  // 跟踪 isEditing 变化 + 标记是否由 onInput 触发编辑转换
+  const prevEditingRef = React.useRef(false)
+  const enteredViaInputRef = React.useRef(false)
 
   // 设置内容、光标和焦点
   React.useEffect(() => {
     if (editorRef.current) {
       const el = editorRef.current
+      const justEnteredEditing = isEditing && !prevEditingRef.current
 
       if (isEditing) {
         // 编辑态：确保内容正确（editingValue 优先）
@@ -81,13 +91,16 @@ function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingVa
         if (document.activeElement !== el) {
           el.focus()
         }
-        // 编辑态：光标移到末尾
-        const selection = window.getSelection()
-        const range = document.createRange()
-        range.selectNodeContents(el)
-        range.collapse(false)  // false = 移到末尾
-        selection?.removeAllRanges()
-        selection?.addRange(range)
+        // 光标移到末尾：仅在刚进入编辑态且非打字触发时（点击/双击）
+        if (justEnteredEditing && !enteredViaInputRef.current) {
+          const selection = window.getSelection()
+          const range = document.createRange()
+          range.selectNodeContents(el)
+          range.collapse(false)
+          selection?.removeAllRanges()
+          selection?.addRange(range)
+        }
+        enteredViaInputRef.current = false
       } else if (isSelected) {
         // 选中态：显示原值
         if (el.textContent !== String(value)) {
@@ -96,15 +109,17 @@ function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingVa
         // 选中态确保有焦点（这样才能接收键盘输入）
         if (!readOnly && document.activeElement !== el) {
           el.focus()
-          // 选中态：光标移到末尾（防止输入插入到开头）
+        }
+        // 选中态：始终全选内容，打字时浏览器自动替换
+        if (!readOnly) {
           const selection = window.getSelection()
           const range = document.createRange()
           range.selectNodeContents(el)
-          range.collapse(false)  // false = 移到末尾
           selection?.removeAllRanges()
           selection?.addRange(range)
         }
       }
+      prevEditingRef.current = isEditing
     }
   }, [isEditing, isSelected, editingValue, value, readOnly])
 
@@ -117,17 +132,48 @@ function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingVa
     setOpen(true)
   }
 
-  // 选中态或悬停态时显示图标按钮（只读模式隐藏）
-  const showIconButton = !readOnly && (isSelected || isCellHovering)
+  // 字段内容变更处理
+  const handleFieldSave = (newTextFields: { fieldId: string; content: string }[]) => {
+    onChange?.({ textFields: newTextFields })
+    setOpen(false)
+  }
+
+  // more 图标：仅当列级有字段配置时展示（选中态或悬停态）
+  const hasFields = columnFields.length > 0
+  const showIconButton = !readOnly && hasFields && (isSelected || isCellHovering)
+
+  // 字段管理面板（共用）
+  const fieldPanel = (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="iconSm"
+          leftIcon="icon-more"
+          className={cn(
+            "ml-auto shrink-0",
+            !showIconButton && "opacity-0 pointer-events-none"
+          )}
+          onClick={handleIconButtonClick}
+        />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[184px]">
+        <TextFieldManager
+          fields={columnFields}
+          textFields={cellTextFields}
+          onSave={handleFieldSave}
+        />
+      </PopoverContent>
+    </Popover>
+  )
 
   // 选中态或编辑态：都渲染 contenteditable + 图标按钮
-  // 关键：选中态 contentEditable=true（隐藏光标），编辑态显示光标
   if (isEditing || isSelected) {
     return (
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <div
           ref={editorRef}
-          contentEditable={!readOnly}  // 选中态和编辑态都可编辑
+          contentEditable={!readOnly}
           suppressContentEditableWarning
           onClick={(e) => {
             // 选中态：单击进入编辑态
@@ -144,6 +190,8 @@ function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingVa
               onUpdateEditingValue?.(text)
             } else if (isSelected && !readOnly) {
               // 选中态检测到输入 → 进入编辑态，传入当前输入的内容
+              // 标记由打字触发，浏览器已正确定位光标
+              enteredViaInputRef.current = true
               onStartEdit?.(text)
             }
           }}
@@ -199,31 +247,11 @@ function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingVa
           className={cn(
             "flex-1 min-h-6 bg-transparent outline-none text-inherit font-inherit overflow-hidden whitespace-nowrap",
             // 选中态：隐藏光标，看起来像普通文本
-            isSelected && !isEditing && "caret-transparent cursor-pointer"
+            isSelected && !isEditing && "caret-transparent cursor-pointer selection:bg-transparent"
           )}
         />
 
-        {/* 图标按钮：选中态或悬停态时显示 */}
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="iconSm"
-              leftIcon="icon-more"
-              className={cn(
-                "ml-auto shrink-0",
-                !showIconButton && "opacity-0 pointer-events-none"
-              )}
-              onClick={handleIconButtonClick}
-            />
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-[184px]">
-            <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-              {/* 面板内容待定 */}
-              <PopoverLabel>文本列设置</PopoverLabel>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {fieldPanel}
       </div>
     )
   }
@@ -238,27 +266,64 @@ function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingVa
         {String(value) || " "}
       </TruncatedText>
 
-      {/* 图标按钮：选中态或悬停态时显示 */}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="iconSm"
-            leftIcon="icon-more"
-            className={cn(
-              "ml-auto shrink-0",
-              !showIconButton && "opacity-0 pointer-events-none"
-            )}
-            onClick={handleIconButtonClick}
-          />
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-[184px]">
-          <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-            {/* 面板内容待定 */}
-            <PopoverLabel>文本列设置</PopoverLabel>
+      {fieldPanel}
+    </div>
+  )
+}
+
+// 文本列字段管理面板
+function TextFieldManager({ fields, textFields, onSave }: {
+  fields: TextFieldItem[]
+  textFields: { fieldId: string; content: string }[]
+  onSave: (textFields: { fieldId: string; content: string }[]) => void
+}) {
+  const [values, setValues] = React.useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {}
+    fields.forEach(f => {
+      const existing = textFields.find(tf => tf.fieldId === f.id)
+      map[f.id] = existing?.content ?? ''
+    })
+    return map
+  })
+
+  const handleSave = () => {
+    onSave(fields.map(f => ({ fieldId: f.id, content: values[f.id] ?? '' })))
+  }
+
+  return (
+    <div
+      data-slot="text-field-manager"
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault()
+          handleSave()
+        }
+        if (e.key === "Escape") {
+          e.preventDefault()
+          onSave(textFields) // 取消 = 恢复原值
+        }
+      }}
+    >
+      {fields.map(f => (
+        <React.Fragment key={f.id}>
+          <PopoverLabel>{f.label}</PopoverLabel>
+          <div className="px-2 pb-1.5">
+            <Input
+              variant="basic"
+              size="base"
+              value={values[f.id] ?? ''}
+              onChange={(e) => setValues(prev => ({ ...prev, [f.id]: e.target.value }))}
+              placeholder={`输入${f.label}`}
+              className="w-full"
+            />
           </div>
-        </PopoverContent>
-      </Popover>
+        </React.Fragment>
+      ))}
+      <PopoverSeparator />
+      <div className="flex gap-2 px-2 py-1.5">
+        <Button variant="outline" size="base" className="flex-1" onClick={() => onSave(textFields)}>取消</Button>
+        <Button variant="primary" size="base" className="flex-1" onClick={handleSave}>保存</Button>
+      </div>
     </div>
   )
 }
@@ -269,10 +334,15 @@ function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editing
   const editorRef = React.useRef<HTMLDivElement>(null)
   const [open, setOpen] = React.useState(false)
 
+  // 跟踪 isEditing 变化 + 标记是否由 onInput 触发编辑转换
+  const prevEditingRef = React.useRef(false)
+  const enteredViaInputRef = React.useRef(false)
+
   // 设置内容、光标和焦点
   React.useEffect(() => {
     if (editorRef.current) {
       const el = editorRef.current
+      const justEnteredEditing = isEditing && !prevEditingRef.current
 
       if (isEditing) {
         // 编辑态：确保内容正确
@@ -284,13 +354,16 @@ function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editing
         if (document.activeElement !== el) {
           el.focus()
         }
-        // 编辑态：光标移到末尾
-        const selection = window.getSelection()
-        const range = document.createRange()
-        range.selectNodeContents(el)
-        range.collapse(false)  // false = 移到末尾
-        selection?.removeAllRanges()
-        selection?.addRange(range)
+        // 光标移到末尾：仅在刚进入编辑态且非打字触发时（点击/双击）
+        if (justEnteredEditing && !enteredViaInputRef.current) {
+          const selection = window.getSelection()
+          const range = document.createRange()
+          range.selectNodeContents(el)
+          range.collapse(false)  // false = 移到末尾
+          selection?.removeAllRanges()
+          selection?.addRange(range)
+        }
+        enteredViaInputRef.current = false
       } else if (isSelected) {
         // 选中态：显示原值
         if (el.textContent !== String(value)) {
@@ -300,7 +373,16 @@ function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editing
         if (!readOnly && document.activeElement !== el) {
           el.focus()
         }
+        // 选中态：始终全选内容，打字时浏览器自动替换
+        if (!readOnly) {
+          const selection = window.getSelection()
+          const range = document.createRange()
+          range.selectNodeContents(el)
+          selection?.removeAllRanges()
+          selection?.addRange(range)
+        }
       }
+      prevEditingRef.current = isEditing
     }
   }, [isEditing, isSelected, editingValue, value, readOnly])
 
@@ -349,6 +431,8 @@ function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editing
               onUpdateEditingValue?.(text)
             } else if (isSelected && !readOnly) {
               // 选中态检测到有效输入 → 进入编辑态，传入当前内容
+              // 标记由打字触发，浏览器已正确定位光标，useEffect 不应干预
+              enteredViaInputRef.current = true
               onStartEdit?.(text)
             }
           }}
@@ -407,7 +491,7 @@ function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editing
           className={cn(
             "flex-1 min-h-6 bg-transparent outline-none text-inherit font-inherit overflow-hidden whitespace-nowrap",
             // 选中态：隐藏光标，看起来像普通文本
-            isSelected && !isEditing && "caret-transparent cursor-pointer"
+            isSelected && !isEditing && "caret-transparent cursor-pointer selection:bg-transparent"
           )}
         />
 

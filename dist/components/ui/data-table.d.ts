@@ -1,6 +1,6 @@
 import * as React from "react";
 import { type VariantProps } from "class-variance-authority";
-import type { TableData, CellRendererRegistry, DataTableHandle } from "@/types/table";
+import type { TableData, CellRendererRegistry, DataTableHandle, CellEditEvent } from "@/types/table";
 declare const tableVariants: (props?: ({
     variant?: "base" | "plain" | null | undefined;
     radius?: "sm" | "base" | "none" | null | undefined;
@@ -13,6 +13,8 @@ interface DataTableProps extends React.HTMLAttributes<HTMLDivElement>, VariantPr
     contained?: boolean;
     /** 分组收起状态变更回调，业务层可用于持久化（如 localStorage） */
     onCollapsedGroupsChange?: (groups: string[]) => void;
+    /** 单元格值变更回调，编辑完成时触发 */
+    onCellValueChange?: (event: CellEditEvent) => void;
 }
 declare const DataTable: React.ForwardRefExoticComponent<DataTableProps & React.RefAttributes<DataTableHandle>>;
 export { DataTable, tableVariants };

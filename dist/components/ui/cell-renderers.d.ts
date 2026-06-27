@@ -1,12 +1,15 @@
 import * as React from "react";
 import type { CellRendererProps } from "@/types/table";
-declare function TextCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, readOnly }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
-declare function NumberCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, readOnly }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
-declare function InputCellRenderer({ value, options, onChange, cellId, isCellHovering }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
-declare function SelectCellRenderer({ value, options }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
-declare function SelectEditableCellRenderer({ value, options, onChange, onUpdateColumnOptions, isLocked, isCellHovering, onLockCell, readOnly }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
-declare function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLockCell, readOnly }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
-declare function IconCellRenderer({ value, options }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
-declare function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange, readOnly }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
+declare function TruncatedText({ children, className, onDoubleClick, onClick }: {
+    children: string;
+    className?: string;
+    onDoubleClick?: () => void;
+    onClick?: () => void;
+}): import("react/jsx-runtime").JSX.Element;
+declare function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly, isCellHovering, onSelectCell, options, cellData, onChange }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
+declare function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly, isCellHovering, onSelectCell }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
+declare function SelectEditableCellRenderer({ value, options, onChange, onUpdateColumnOptions, isSelected, isCellHovering, onSelectCell, readOnly }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
+declare function LinkCellRenderer({ cellData, isSelected, isCellHovering, onChange, onSelectCell, readOnly }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
+declare function AttachmentCellRenderer({ cellData, isSelected, isCellHovering, onChange, readOnly }: CellRendererProps): import("react/jsx-runtime").JSX.Element;
 declare const defaultCellRenderers: Record<string, React.ComponentType<CellRendererProps>>;
-export { TextCellRenderer, NumberCellRenderer, InputCellRenderer, SelectCellRenderer, SelectEditableCellRenderer, ButtonCellRenderer, AttachmentCellRenderer, IconCellRenderer, defaultCellRenderers, };
+export { TruncatedText, TextCellRenderer, NumberCellRenderer, SelectEditableCellRenderer, LinkCellRenderer, AttachmentCellRenderer, defaultCellRenderers, };

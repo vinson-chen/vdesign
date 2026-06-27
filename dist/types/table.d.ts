@@ -2,7 +2,7 @@
  * 表格数据类型定义
  */
 import type * as React from "react";
-export type CellType = 'text' | 'number' | 'checkbox' | 'editable' | 'button' | 'attachment' | 'icon' | 'input' | 'select' | 'preview' | 'reference';
+export type CellType = 'text' | 'number' | 'checkbox' | 'link' | 'attachment' | 'select';
 export interface CellRendererProps {
     value: string | boolean | number;
     cellId: string;
@@ -10,11 +10,11 @@ export interface CellRendererProps {
     columnId: string;
     onChange?: (value: unknown) => void;
     isEditing: boolean;
-    isLocked?: boolean;
+    isSelected?: boolean;
     isCellHovering?: boolean;
     readOnly?: boolean;
-    onStartEdit?: () => void;
-    onLockCell?: () => void;
+    onStartEdit?: (initialValue?: string) => void;
+    onSelectCell?: () => void;
     options?: Record<string, unknown>;
     cellData?: CellData;
     editingValue?: string;
@@ -28,6 +28,10 @@ export interface SelectOptionItem {
     value: string;
     label: string;
     disabled?: boolean;
+}
+export interface TextFieldItem {
+    id: string;
+    label: string;
 }
 export interface ButtonCellConfig {
     label?: string;
@@ -46,6 +50,10 @@ export interface CellData {
     options?: Record<string, unknown>;
     buttonConfig?: ButtonCellConfig;
     attachmentFiles?: File[];
+    textFields?: {
+        fieldId: string;
+        content: string;
+    }[];
 }
 export interface ColumnDef {
     id: string;
@@ -76,7 +84,7 @@ export interface TableState {
     selectAll: boolean;
     editingCellId: string | null;
     editingValue: string;
-    lockedCellId: string | null;
+    selectedCellId: string | null;
     columnWidths: Record<string, number>;
     allColumns: ColumnDef[];
     hiddenColumns: Set<string>;
@@ -94,7 +102,7 @@ export interface TableActions {
     finishEdit: () => void;
     cancelEdit: () => void;
     updateEditingValue: (value: string) => void;
-    lockCell: (cellId: string | null) => void;
+    selectCell: (cellId: string | null) => void;
     updateCellValue: (cellId: string, value: unknown) => void;
     updateColumnWidth: (columnId: string, width: number) => void;
     insertColumnLeft: (columnId: string) => void;
@@ -145,4 +153,12 @@ export interface TableSnapshot {
 export interface DataTableHandle {
     undo: () => void;
     redo: () => void;
+}
+/** 单元格编辑事件 */
+export interface CellEditEvent {
+    cellId: string;
+    rowId: string;
+    columnId: string;
+    newValue: string | number | boolean;
+    oldValue: string | number | boolean;
 }

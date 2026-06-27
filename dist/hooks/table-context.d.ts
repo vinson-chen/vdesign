@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { TableContextValue, TableState, TableActions, TableData, CellRendererRegistry } from "@/types/table";
+import type { TableContextValue, TableState, TableActions, TableData, CellRendererRegistry, CellEditEvent } from "@/types/table";
 declare const CellRenderersContext: React.Context<CellRendererRegistry>;
 declare function useTableActions(): TableActions;
 declare function useTableData(): TableData;
@@ -9,7 +9,9 @@ interface TableProviderProps {
     data: TableData;
     cellRenderers?: CellRendererRegistry;
     readOnly?: boolean;
+    /** 单元格值变更回调，编辑完成时触发 */
+    onCellValueChange?: (event: CellEditEvent) => void;
     children: React.ReactNode;
 }
-declare function TableProvider({ data, cellRenderers, readOnly, children }: TableProviderProps): import("react/jsx-runtime").JSX.Element;
+declare function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, children }: TableProviderProps): import("react/jsx-runtime").JSX.Element;
 export { TableProvider, useTable, useTableActions, useTableData, useTableState, CellRenderersContext };

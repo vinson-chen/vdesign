@@ -1,4 +1,4 @@
-import type { CellType, SelectOptionItem } from "@/types/table";
+import type { CellType, SelectOptionItem, TextFieldItem } from "@/types/table";
 interface EditField {
     label: string;
     type: "input" | "select" | "content";
@@ -15,6 +15,8 @@ interface EditField {
     contentType?: CellType;
     selectOptions?: SelectOptionItem[];
     onSelectOptionsChange?: (options: SelectOptionItem[]) => void;
+    textFields?: TextFieldItem[];
+    onTextFieldsChange?: (fields: TextFieldItem[]) => void;
 }
 interface PopoverEditContentProps {
     size?: "base" | "sm" | "lg";

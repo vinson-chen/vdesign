@@ -9,7 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "./select"
-import type { CellType, SelectOptionItem } from "@/types/table"
+import type { CellType, SelectOptionItem, TextFieldItem } from "@/types/table"
 
 interface EditField {
   label: string
@@ -21,10 +21,12 @@ interface EditField {
   autoFocus?: boolean
   selectOnFocus?: boolean
   options?: { value: string; label: string }[] // for select
-  // content 类型专属（仅用于单选列选项配置）
+  // content 类型专属
   contentType?: CellType
   selectOptions?: SelectOptionItem[]
   onSelectOptionsChange?: (options: SelectOptionItem[]) => void
+  textFields?: TextFieldItem[]
+  onTextFieldsChange?: (fields: TextFieldItem[]) => void
 }
 
 interface PopoverEditContentProps {
@@ -99,48 +101,68 @@ function PopoverEditContent({ size, fields }: PopoverEditContentProps) {
   )
 }
 
-// 内容配置字段（仅用于单选列选项配置）
+// 内容配置字段（选择列选项配置 / 文本列字段配置）
 function ContentField({ field, paddingClass }: {
   field: EditField
   paddingClass: string
   size: "base" | "sm" | "lg"
 }) {
-  const selectOptions = field.selectOptions ?? []
+  // 根据列类型区分数据源
+  const isText = field.contentType === "text"
+  const isSelect = field.contentType === "select"
+  if (!isText && !isSelect) return null
+
+  // 统一用 items 数组操作
+  const items: { key: string; label: string }[] = isSelect
+    ? (field.selectOptions ?? []).map(o => ({ key: o.value, label: o.label }))
+    : (field.textFields ?? []).map(f => ({ key: f.id, label: f.label }))
+
+  const addLabel = isSelect ? "添加选项" : "添加字段"
+  const placeholderLabel = isSelect ? "输入选项名称" : "输入字段名称"
 
   // 拖拽状态
   const [dragIndex, setDragIndex] = React.useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null)
 
   // 生成唯一 ID
-  const generateOptionId = () => `opt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+  const generateId = () => `${isSelect ? "opt" : "fld"}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 
-  // 添加选项
-  const handleAddOption = () => {
-    const newOption: SelectOptionItem = {
-      value: generateOptionId(),
-      label: "",
+  // 添加项：新项插入到列表头部，紧贴按钮下方
+  const handleAdd = () => {
+    const newItem = { key: generateId(), label: "" }
+    if (isSelect) {
+      field.onSelectOptionsChange?.([{ value: newItem.key, label: "" }, ...(field.selectOptions ?? [])])
+    } else {
+      field.onTextFieldsChange?.([{ id: newItem.key, label: "" }, ...(field.textFields ?? [])])
     }
-    field.onSelectOptionsChange?.([...selectOptions, newOption])
   }
 
-  // 删除选项
-  const handleRemoveOption = (index: number) => {
-    const newOptions = selectOptions.filter((_, i) => i !== index)
-    field.onSelectOptionsChange?.(newOptions)
+  // 删除项
+  const handleRemove = (index: number) => {
+    if (isSelect) {
+      field.onSelectOptionsChange?.((field.selectOptions ?? []).filter((_, i) => i !== index))
+    } else {
+      field.onTextFieldsChange?.((field.textFields ?? []).filter((_, i) => i !== index))
+    }
   }
 
-  // 更新选项标签
-  const handleUpdateOption = (index: number, newLabel: string) => {
-    const newOptions = selectOptions.map((opt, i) =>
-      i === index ? { ...opt, label: newLabel } : opt
-    )
-    field.onSelectOptionsChange?.(newOptions)
+  // 更新标签
+  const handleUpdate = (index: number, newLabel: string) => {
+    if (isSelect) {
+      const newOptions = (field.selectOptions ?? []).map((opt, i) =>
+        i === index ? { ...opt, label: newLabel } : opt
+      )
+      field.onSelectOptionsChange?.(newOptions)
+    } else {
+      const newFields = (field.textFields ?? []).map((f, i) =>
+        i === index ? { ...f, label: newLabel } : f
+      )
+      field.onTextFieldsChange?.(newFields)
+    }
   }
 
   // 拖拽排序
-  const handleDragStart = (index: number) => {
-    setDragIndex(index)
-  }
+  const handleDragStart = (index: number) => setDragIndex(index)
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault()
@@ -149,48 +171,55 @@ function ContentField({ field, paddingClass }: {
 
   const handleDragEnd = () => {
     if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
-      const newOptions = [...selectOptions]
-      const removed = newOptions[dragIndex]
-      if (removed) {
-        newOptions.splice(dragIndex, 1)
-        newOptions.splice(dragOverIndex, 0, removed)
-        field.onSelectOptionsChange?.(newOptions)
+      if (isSelect) {
+        const arr = [...(field.selectOptions ?? [])]
+        const removed = arr[dragIndex]
+        if (removed) {
+          arr.splice(dragIndex, 1)
+          arr.splice(dragOverIndex, 0, removed)
+          field.onSelectOptionsChange?.(arr)
+        }
+      } else {
+        const arr = [...(field.textFields ?? [])]
+        const removed = arr[dragIndex]
+        if (removed) {
+          arr.splice(dragIndex, 1)
+          arr.splice(dragOverIndex, 0, removed)
+          field.onTextFieldsChange?.(arr)
+        }
       }
     }
     setDragIndex(null)
     setDragOverIndex(null)
   }
 
-  // 只在单选列时显示
-  if (field.contentType !== "select") return null
-
   return (
     <div className={paddingClass}>
-      {/* 添加选项按钮 */}
+      {/* 添加按钮 */}
       <Button
         variant="ghost"
         size="base"
         className="w-full justify-center text-black-55"
         leftIcon="icon-add"
-        onClick={handleAddOption}
+        onClick={handleAdd}
       >
-        添加选项
+        {addLabel}
       </Button>
 
-      {/* 选项列表 */}
-      {selectOptions.length > 0 && (
+      {/* 项列表 */}
+      {items.length > 0 && (
         <div className="mt-1.5 flex flex-col gap-0.5">
-          {selectOptions.map((option, optIndex) => (
+          {items.map((item, itemIndex) => (
             <div
-              key={option.value}
+              key={item.key}
               draggable
-              onDragStart={() => handleDragStart(optIndex)}
-              onDragOver={(e) => handleDragOver(e, optIndex)}
+              onDragStart={() => handleDragStart(itemIndex)}
+              onDragOver={(e) => handleDragOver(e, itemIndex)}
               onDragEnd={handleDragEnd}
               className={cn(
                 "flex items-center gap-1 rounded-sm px-0.5 py-0.5",
-                dragOverIndex === optIndex && "bg-brand-1",
-                dragIndex === optIndex && "opacity-50"
+                dragOverIndex === itemIndex && "bg-brand-1",
+                dragIndex === itemIndex && "opacity-50"
               )}
             >
               {/* 拖拽手柄 */}
@@ -200,21 +229,21 @@ function ContentField({ field, paddingClass }: {
                 leftIcon="icon-move"
                 className="shrink-0 cursor-grab text-black-55"
               />
-              {/* 选项输入框 */}
+              {/* 输入框 */}
               <Input
                 variant="basic"
                 size="base"
-                value={option.label}
-                onChange={(e) => handleUpdateOption(optIndex, e.target.value)}
+                value={item.label}
+                onChange={(e) => handleUpdate(itemIndex, e.target.value)}
                 className="flex-1 min-w-0"
-                placeholder="输入选项名称"
+                placeholder={placeholderLabel}
               />
               {/* 删除按钮 */}
               <Button
                 variant="ghost"
                 size="iconSm"
                 leftIcon="icon-close"
-                onClick={() => handleRemoveOption(optIndex)}
+                onClick={() => handleRemove(itemIndex)}
                 className="shrink-0 text-black-55"
               />
             </div>

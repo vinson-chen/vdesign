@@ -49,6 +49,12 @@ export interface SelectOptionItem {
   disabled?: boolean
 }
 
+// 文本列字段项类型（用于文本列单元格结构化字段配置）
+export interface TextFieldItem {
+  id: string
+  label: string
+}
+
 // Button 单元格配置（单元格级别）
 export interface ButtonCellConfig {
   label?: string  // 按钮名称，为空时显示图标按钮
@@ -74,6 +80,8 @@ export interface CellData {
   buttonConfig?: ButtonCellConfig
   // 附件单元格专属配置（单元格级别）
   attachmentFiles?: File[]
+  // 文本列字段内容（单元格级别），fieldId 对应列级 TextFieldItem.id
+  textFields?: { fieldId: string; content: string }[]
 }
 
 // 列定义
