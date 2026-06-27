@@ -2,7 +2,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { TableProvider, useTable, useTableData, useTableState, useTableActions, useFirstDataColumn, CellRenderersContext } from "@/hooks"
-import type { TableData, CellType, GroupedData, RowData, CellRendererRegistry, DataTableHandle, CellEditEvent } from "@/types/table"
+import type { TableData, CellType, GroupedData, RowData, CellRendererRegistry, DataTableHandle, CellEditEvent, ColumnDef } from "@/types/table"
 import { Cell } from "./cell"
 import { Checkbox } from "./checkbox"
 import { Button } from "./button"
@@ -16,8 +16,26 @@ import { HeaderCellMenuView } from "./header-cell-menu"
 import { HeaderCellEditView } from "./header-cell-edit"
 import { HeaderCellHideManagerView } from "./header-cell-hide-manager"
 import { HeaderCellDimensionView } from "./header-cell-dimension"
-import { TextCellRenderer } from "./cell-renderers"
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "./tooltip"
+import { TextCellRenderer, TruncatedText } from "./cell-renderers"
+import { TooltipProvider } from "./tooltip"
+
+// 附件列复制粘贴的内存存储（应用内部数据传递，不走系统剪贴板）
+const attachmentCopyStorage: {
+  files: File[] | null
+  sourceCellId: string | null
+} = {
+  files: null,
+  sourceCellId: null
+}
+
+// Link 列复制粘贴的内存存储
+const linkCopyStorage: {
+  buttonConfig: { label?: string, url?: string } | null
+  sourceCellId: string | null
+} = {
+  buttonConfig: null,
+  sourceCellId: null
+}
 
 const tableVariants = cva("flex flex-col relative", {
   variants: {
@@ -36,47 +54,6 @@ const tableVariants = cva("flex flex-col relative", {
     radius: "none",
   },
 })
-
-// 截断文本组件：检测文本是否被截断，若截断则悬停显示 Tooltip
-function TruncatedText({ children, className, onDoubleClick }: { children: string; className?: string; onDoubleClick?: () => void }) {
-  const textRef = React.useRef<HTMLSpanElement>(null)
-  const [isTruncated, setIsTruncated] = React.useState(false)
-
-  React.useEffect(() => {
-    if (textRef.current) {
-      setIsTruncated(textRef.current.scrollWidth > textRef.current.clientWidth)
-    }
-  }, [children])
-
-  if (isTruncated) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            ref={textRef}
-            className={className}
-            onDoubleClick={onDoubleClick}
-          >
-            {children}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="top" size="base">
-          <p>{children}</p>
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
-
-  return (
-    <span
-      ref={textRef}
-      className={className}
-      onDoubleClick={onDoubleClick}
-    >
-      {children}
-    </span>
-  )
-}
 
 interface CellContentProps {
   cellId: string
@@ -134,8 +111,8 @@ function HeaderTextCellInner({ cellId: _cellId, value, columnId, currentColumnTy
             if (state.selectedColumnId === columnId) {
               actions.selectColumn(null)
             }
-            if (state.lockedCellId) {
-              actions.lockCell(null)
+            if (state.selectedCellId) {
+              actions.selectCell(null)
             }
           }}
           onDoubleClick={(e) => e.stopPropagation()}
@@ -289,8 +266,8 @@ function CellContent({ cellId, type, value, rowId, isHeader, columnId, rowIndex,
   // 合并 options：单元格级优先于列级
   const mergedOptions = cellOptions ? { ...columnDef?.options, ...cellOptions } : columnDef?.options
 
-  // 判断是否为锁定态
-  const isLocked = state.lockedCellId === cellId
+  // 判断是否为选中态
+  const isSelected = state.selectedCellId === cellId
 
   // 获取当前单元格的完整数据（从 rows 中查找）
   const currentRow = rowId ? data.rows.find(r => r.id === rowId) : undefined
@@ -304,11 +281,11 @@ function CellContent({ cellId, type, value, rowId, isHeader, columnId, rowIndex,
       columnId={columnId!}
       onChange={(newValue: unknown) => actions.updateCellValue(cellId, newValue)}
       isEditing={state.editingCellId === cellId}
-      isLocked={isLocked}
+      isSelected={isSelected}
       isCellHovering={isCellHovering}
       readOnly={state.readOnly}
-      onStartEdit={() => actions.startEdit(cellId, String(value))}
-      onLockCell={() => actions.lockCell(cellId)}
+      onStartEdit={(initialValue?: string) => actions.startEdit(cellId, initialValue ?? String(value))}
+      onSelectCell={() => actions.selectCell(cellId)}
       options={mergedOptions}
       cellData={currentCell}
       editingValue={state.editingValue}
@@ -397,19 +374,19 @@ const RowRenderer = React.memo(function RowRenderer({ row, isHeader, isLastRow: 
         const frozenLeft = frozenOffsets[columnId] ?? 0
         const isLastFrozen = isFrozen && frozenLeft + width === frozenWidth
 
-        const isEditing = !isHeader && state.editingCellId === cell.id && cellType === "text"
+        const isEditing = !isHeader && state.editingCellId === cell.id && (cellType === "text" || cellType === "number" || cellType === "editable")
         const isColumnSelected = state.selectedColumnId === columnId
-        const isLocked = !isHeader && state.lockedCellId === cell.id
+        const isCellSelected = !isHeader && state.selectedCellId === cell.id
         const isCellHovering = !isHeader && hoveringCellId === cell.id
 
         // 表头 variant 优先级：headerSelected > header
-        // 表体 variant 优先级：editing > locked > selected(行或列) > defaultHover > default
+        // 表体 variant 优先级：editing > selected(单元格或行或列) > defaultHover > default
         const cellVariant = isHeader
           ? (isColumnSelected ? "headerSelected" : "header")
           : isEditing
             ? "editing"
-            : isLocked
-              ? "locked"
+            : isCellSelected
+              ? "selected"
               : (isSelected || isColumnSelected)
                 ? "selected"
                 : (isCellHovering && !state.readOnly ? "defaultHover" : "default")
@@ -585,7 +562,11 @@ function GroupHeaderRow({ groupValue, rowCount, frozenWidth, rowWidth, checkboxW
                     if (e.key === "Enter") handleFinishEdit()
                     if (e.key === "Escape") actions.cancelEdit()
                   }}
-                  onFocus={(e) => e.target.select()}
+                  onFocus={(e) => {
+                    // 光标移到文本末尾，不选中
+                    const len = e.target.value.length
+                    e.target.setSelectionRange(len, len)
+                  }}
                   className="absolute inset-0 bg-transparent border-none outline-none text-inherit font-inherit overflow-hidden"
                   autoFocus
                 />
@@ -1094,7 +1075,7 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
     }
   }, [draggingColumnId, columnIds, state.columnWidths, state.frozenColumns, actions])
 
-  // 点击其他区域清空选中列和锁定态
+  // 点击其他区域清空选中列和单元格选中态
   const handleTableClick = React.useCallback(() => {
     if (dragJustEndedRef.current) {
       dragJustEndedRef.current = false
@@ -1102,28 +1083,28 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
     }
     if (isHeaderPopoverOpenRef.current) return
     actions.selectColumn(null)
-    actions.lockCell(null)
+    actions.selectCell(null)
   }, [actions])
 
-  // 处理表体单元格点击（锁定态）
+  // 处理表体单元格点击（选中态）
   const handleBodyCellClick = React.useCallback((cellId: string, e: React.MouseEvent) => {
-    // readOnly 模式下禁用锁定态
+    // readOnly 模式下禁用选中态
     if (state.readOnly) return
-    // 阻止事件冒泡到表格层（防止 handleTableClick 清空锁定态）
+    // 阻止事件冒泡到表格层（防止 handleTableClick 清空选中态）
     e.stopPropagation()
-    // 过滤组件元素点击（按钮、输入框、下拉等）→ 不改变锁定态
+    // 过滤组件元素点击（按钮、输入框、下拉等）→ 不改变选中态
     const target = e.target as HTMLElement
     if (target.closest('button, input, select, a, [role="button"], [data-slot="select-trigger"]')) {
       return
     }
-    // 非组件区域点击 → 切换锁定态
-    actions.lockCell(cellId)
+    // 非组件区域点击 → 进入单元格选中态
+    actions.selectCell(cellId)
   }, [actions, state.readOnly])
 
-  // 键盘导航：获取当前锁定单元格的行列索引
-  const getLockedCellPosition = React.useCallback(() => {
-    if (!state.lockedCellId) return null
-    // 遍历所有行和列找到锁定单元格的位置
+  // 键盘导航：获取当前选中单元格的行列索引
+  const getSelectedCellPosition = React.useCallback(() => {
+    if (!state.selectedCellId) return null
+    // 遍历所有行和列找到选中单元格的位置
     const allRows = state.groupColumnId
       ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
       : data.rows
@@ -1131,17 +1112,17 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
       const row = allRows[rowIndex]
       if (!row) continue
       for (let colIndex = 0; colIndex < row.cells.length; colIndex++) {
-        if (row.cells[colIndex]?.id === state.lockedCellId) {
+        if (row.cells[colIndex]?.id === state.selectedCellId) {
           return { rowIndex, colIndex, rowId: row.id }
         }
       }
     }
     return null
-  }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
+  }, [state.selectedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
 
-  // 键盘导航：根据方向移动锁定态（跳过 checkbox 列）
-  const navigateLockedCell = React.useCallback((direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') => {
-    const pos = getLockedCellPosition()
+  // 键盘导航：根据方向移动选中态（跳过 checkbox 列）
+  const navigateSelectedCell = React.useCallback((direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight') => {
+    const pos = getSelectedCellPosition()
     if (!pos) return
 
     // 获取可见行（跳过折叠分组）
@@ -1184,84 +1165,168 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
     const targetCell = visibleRows[newRowIndex]?.cells[newColIndex]
     // 确保目标单元格不是 checkbox
     if (targetCell && targetCell.type !== 'checkbox') {
-      actions.lockCell(targetCell.id)
+      actions.selectCell(targetCell.id)
     }
-  }, [getLockedCellPosition, state.groupColumnId, state.collapsedGroups, groupedData, data.rows, actions])
+  }, [getSelectedCellPosition, state.groupColumnId, state.collapsedGroups, groupedData, data.rows, actions])
 
   // 键盘导航：获取单元格类型
-  const getLockedCellType = React.useCallback(() => {
-    if (!state.lockedCellId) return null
+  const getSelectedCellType = React.useCallback(() => {
+    if (!state.selectedCellId) return null
     const allRows = state.groupColumnId
       ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
       : data.rows
     for (const row of allRows) {
       for (let i = 0; i < row.cells.length; i++) {
         const cell = row.cells[i]
-        if (cell?.id === state.lockedCellId) {
+        if (cell?.id === state.selectedCellId) {
           return cell.type ?? data.columns[i]?.type ?? 'text'
         }
       }
     }
     return null
-  }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows, data.columns])
+  }, [state.selectedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows, data.columns])
 
   // 键盘导航：获取单元格当前值
-  const getLockedCellValue = React.useCallback(() => {
-    if (!state.lockedCellId) return ''
+  const getSelectedRowId = React.useCallback(() => {
+    if (!state.selectedCellId) return null
     const allRows = state.groupColumnId
       ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
       : data.rows
     for (const row of allRows) {
       for (const cell of row.cells) {
-        if (cell.id === state.lockedCellId) {
+        if (cell?.id === state.selectedCellId) {
+          return row.id
+        }
+      }
+    }
+    return null
+  }, [state.selectedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
+
+  // 键盘导航：获取单元格当前值
+  const getSelectedCellValue = React.useCallback(() => {
+    if (!state.selectedCellId) return ''
+    const allRows = state.groupColumnId
+      ? (groupedData?.flatMap(g => state.collapsedGroups.has(g.groupValue) ? [] : g.rows) ?? data.rows)
+      : data.rows
+    for (const row of allRows) {
+      for (let i = 0; i < row.cells.length; i++) {
+        const cell = row.cells[i]
+        if (!cell) continue
+        if (cell.id === state.selectedCellId) {
+          // 检查列类型
+          const column = data.columns[i]
+          if (column?.type === 'select') {
+            // 选择列：提取选项的 label
+            const items = column.options?.items as { value: string, label: string }[] || []
+            const item = items.find(o => o.value === cell.value)
+            return item?.label || String(cell.value ?? '')
+          }
           return String(cell.value ?? '')
         }
       }
     }
     return ''
-  }, [state.lockedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows])
+  }, [state.selectedCellId, state.groupColumnId, state.collapsedGroups, groupedData, data.rows, data.columns])
 
-  // composition 状态跟踪（中文输入法）- 在组件级别持续监听，不依赖锁定态
-  const isComposingRef = React.useRef(false)
+  // 辅助函数：判断单元格类型是否为可编辑型
+  const isEditableType = (type: string | null) => {
+    return type && ['text', 'number'].includes(type)
+  }
 
-  React.useEffect(() => {
-    const handleCompositionStart = () => {
-      isComposingRef.current = true
-    }
+  // 辅助函数：判断单元格类型是否为始终交互型
+  const isAlwaysInteractiveType = (type: string | null) => {
+    return type && ['select', 'checkbox'].includes(type)
+  }
 
-    const handleCompositionEnd = () => {
-      isComposingRef.current = false
-    }
+  // 辅助函数：批量处理选择列的粘贴值（避免多次更新互相覆盖）
+  const handleSelectPasteBatch = React.useCallback((
+    values: string[],
+    columnId: string,
+    column: ColumnDef
+  ): { originalIndex: number, optionValue: string }[] => {
+    const items = column.options?.items as { value: string, label: string }[] || []
+    const results: { originalIndex: number, optionValue: string }[] = []
+    const newItemsToAdd: { value: string, label: string }[] = []
 
-    document.addEventListener('compositionstart', handleCompositionStart)
-    document.addEventListener('compositionend', handleCompositionEnd)
-    return () => {
-      document.removeEventListener('compositionstart', handleCompositionStart)
-      document.removeEventListener('compositionend', handleCompositionEnd)
-    }
-  }, [])
+    values.forEach((text, index) => {
+      const pastedLabel = text.trim()
 
-  // 键盘事件监听
-  React.useEffect(() => {
-    if (!state.lockedCellId) return
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 读取 composition 状态（由组件级别监听器更新）
-      const isComposing = isComposingRef.current
-      // 编辑态时，让渲染器的 input 自己处理 Enter/Escape
-      // 全局监听器不干预，避免双重调用或时序问题
-      if (state.editingCellId) {
-        // 只处理 Escape 取消编辑（渲染器已经处理了，但全局监听器需要同步状态）
-        if (e.key === 'Escape') {
-          // 不调用 preventDefault，渲染器已经处理了
-          actions.cancelEdit()
-          return
+      // 查找匹配选项
+      const matchedItem = items.find(o => o.label === pastedLabel)
+      if (matchedItem) {
+        results.push({ originalIndex: index, optionValue: matchedItem.value })
+      } else {
+        // 查找是否已在本批次中创建
+        const alreadyCreated = newItemsToAdd.find(o => o.label === pastedLabel)
+        if (alreadyCreated) {
+          results.push({ originalIndex: index, optionValue: alreadyCreated.value })
+        } else {
+          // 创建新选项 ID
+          const newOptionId = `opt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${index}`
+          newItemsToAdd.push({ value: newOptionId, label: pastedLabel })
+          results.push({ originalIndex: index, optionValue: newOptionId })
         }
-        // Enter 由渲染器处理，全局监听器不干预
-        // 其他按键在编辑态不处理
-        return
+      }
+    })
+
+    // 一次性更新列配置（添加所有新选项）
+    if (newItemsToAdd.length > 0) {
+      const newItems = [...items, ...newItemsToAdd]
+      actions.updateColumnOptions(columnId, { ...column.options, items: newItems })
+    }
+
+    return results
+  }, [actions])
+  const focusOrActivateCell = React.useCallback(() => {
+    if (!state.selectedCellId) return
+    const selectedCellElement = document.querySelector(`[data-cell-id="${state.selectedCellId}"]`)
+    if (!selectedCellElement) return
+
+    const cellType = getSelectedCellType()
+
+    // checkbox：切换选中状态
+    if (cellType === 'checkbox') {
+      const checkbox = selectedCellElement.querySelector('input[type="checkbox"]') as HTMLInputElement
+      if (checkbox) {
+        checkbox.click()
+      }
+      return
+    }
+
+    // input/select：聚焦内部控件
+    const inputElement = selectedCellElement.querySelector('input, [data-slot="select-trigger"]') as HTMLElement
+    if (inputElement) {
+      inputElement.focus()
+    }
+  }, [state.selectedCellId, getSelectedCellType])
+
+  // 键盘事件监听（完全对齐 Excel 标准）
+  React.useEffect(() => {
+    // 编辑态：处理 Tab/Enter/Escape（确认编辑 + 导航）
+    if (state.editingCellId) {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Tab') {
+          e.preventDefault()
+          actions.finishEdit()
+          navigateSelectedCell(e.shiftKey ? 'ArrowLeft' : 'ArrowRight')
+        } else if (e.key === 'Enter') {
+          e.preventDefault()
+          actions.finishEdit()
+          navigateSelectedCell(e.shiftKey ? 'ArrowUp' : 'ArrowDown')
+        } else if (e.key === 'Escape') {
+          e.preventDefault()
+          actions.cancelEdit()
+        }
       }
 
+      document.addEventListener('keydown', handleKeyDown, true)  // 使用捕获阶段
+      return () => document.removeEventListener('keydown', handleKeyDown, true)
+    }
+
+    // 选中态：统一处理
+    if (!state.selectedCellId) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
       // 检查焦点是否在可交互元素上（输入框、选择框等）
       const activeElement = document.activeElement as HTMLElement
       const isInteractiveElement = activeElement.closest('input, select, textarea, [data-slot="select-trigger"], [data-slot="select-editable"]')
@@ -1271,94 +1336,109 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
         return
       }
 
-      // Escape → 退出锁定态
-      if (e.key === 'Escape') {
-        actions.lockCell(null)
-        return
-      }
+      const cellType = getSelectedCellType()
 
       // 方向键导航
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault()
-        navigateLockedCell(e.key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight')
+        navigateSelectedCell(e.key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight')
         return
       }
 
-      // Tab / Shift+Tab 导航
+      // Tab 导航
       if (e.key === 'Tab') {
         e.preventDefault()
-        navigateLockedCell(e.shiftKey ? 'ArrowLeft' : 'ArrowRight')
+        navigateSelectedCell(e.shiftKey ? 'ArrowLeft' : 'ArrowRight')
         return
       }
 
-      // 获取锁定单元格类型
-      const cellType = getLockedCellType()
+      // Enter：可编辑型向下移动，始终交互型聚焦/激活控件
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (isAlwaysInteractiveType(cellType)) {
+          focusOrActivateCell()
+        } else {
+          navigateSelectedCell(e.shiftKey ? 'ArrowUp' : 'ArrowDown')
+        }
+        return
+      }
 
-      // 输入列单元格：Enter 或可打印字符 → 聚焦内部 Input
-      if (cellType === 'input' && !state.readOnly) {
-        if (e.key === 'Enter' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !isComposing)) {
-          e.preventDefault()
-          // 查找锁定单元格内的 Input 元素并聚焦
-          const lockedCellElement = document.querySelector(`[data-cell-id="${state.lockedCellId}"]`)
-          if (lockedCellElement) {
-            const inputElement = lockedCellElement.querySelector('input') as HTMLInputElement
-            if (inputElement) {
-              inputElement.focus()
-              // 如果是可打印字符（非 Enter），延迟设置值（等待 focus 生效）
-              if (e.key.length === 1 && e.key !== 'Enter' && !isComposing) {
-                setTimeout(() => {
-                  // 设置原生值
-                  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
-                  nativeInputValueSetter?.call(inputElement, e.key)
-                  // 触发 React 的 onChange
-                  inputElement.dispatchEvent(new Event('input', { bubbles: true }))
-                }, 0)
-              }
-            }
+      // F2：进入编辑态（光标末尾）或聚焦控件
+      if (e.key === 'F2' && !state.readOnly) {
+        if (isEditableType(cellType)) {
+          const currentValue = getSelectedCellValue()
+          actions.startEdit(state.selectedCellId!, currentValue)
+        } else if (isAlwaysInteractiveType(cellType)) {
+          focusOrActivateCell()
+        }
+        return
+      }
+
+      // Delete：直接删除并提交（不进入编辑态）
+      if (e.key === 'Delete' && !state.readOnly) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()  // 阻止所有后续监听器
+        if (isEditableType(cellType)) {
+          actions.updateCellValue(state.selectedCellId!, '')
+        }
+        return
+      }
+
+      // Backspace：清空内容，保持选中态（不进入编辑态）
+      if (e.key === 'Backspace' && !state.readOnly) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+
+        // 所有列类型都支持 Backspace 清空
+        if (cellType === 'select') {
+          // 选择列：清空选中项（选项保留在面板中）
+          actions.updateCellValue(state.selectedCellId!, '')
+        } else if (cellType === 'checkbox') {
+          // checkbox 列：取消选中
+          const selectedRowId = getSelectedRowId()
+          if (selectedRowId) {
+            actions.toggleRowSelect(selectedRowId)
           }
-          return
-        }
-      }
-
-      // Enter → 进入编辑态（文本/数字单元格）— readOnly 模式下禁用
-      if (e.key === 'Enter' && !state.readOnly) {
-        if (cellType === 'text' || cellType === 'editable' || cellType === 'number') {
-          const currentValue = getLockedCellValue()
-          actions.startEdit(state.lockedCellId!, currentValue)
+        } else if (cellType === 'link') {
+          // 链接列：清空配置
+          actions.updateCellValue(state.selectedCellId!, { buttonConfig: {} })
+        } else if (cellType === 'attachment') {
+          // 附件列：清空所有附件
+          actions.updateCellValue(state.selectedCellId!, { attachmentFiles: [] })
+        } else if (isEditableType(cellType)) {
+          // text/number 列：清空内容
+          actions.updateCellValue(state.selectedCellId!, '')
         }
         return
       }
 
-      // 可打印字符 → 进入编辑态（以该字符为初始值）— readOnly 模式下禁用
-      // 判断 composition 状态，避免中文输入法时误触发
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !state.readOnly && !isComposing) {
-        if (cellType === 'text' || cellType === 'editable') {
-          actions.startEdit(state.lockedCellId!, e.key)
-        } else if (cellType === 'number') {
-          // 数字单元格仅接受数字字符作为初始编辑值，拒绝字母等非数字字符
-          if (/^[\d\-.]$/.test(e.key)) {
-            actions.startEdit(state.lockedCellId!, e.key)
+      // 直接输入字符：聚焦 contenteditable 元素（让 IME 正常工作）
+      // 不再调用 startEdit(key)，而是让 contenteditable 获得焦点，浏览器处理 IME
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !state.readOnly) {
+        if (isEditableType(cellType)) {
+          // 数字类型：验证按键是否有效
+          if (cellType === 'number' && !/^[\d\-.]$/.test(e.key)) return
+          // 找到选中单元格中的 contenteditable 元素并聚焦
+          const selectedCellElement = document.querySelector(`[data-cell-id="${state.selectedCellId}"]`)
+          const contenteditable = selectedCellElement?.querySelector('[contenteditable="true"], [tabindex="0"]') as HTMLElement
+          if (contenteditable) {
+            // 不阻止默认行为，让浏览器处理 IME 输入
+            contenteditable.focus()
           }
-        }
-        return
-      }
-
-      // Backspace/Delete → 进入编辑态（清空内容）— readOnly 模式下禁用
-      if ((e.key === 'Backspace' || e.key === 'Delete') && !state.readOnly) {
-        if (cellType === 'text' || cellType === 'editable' || cellType === 'number') {
-          actions.startEdit(state.lockedCellId!, '')
+        } else if (isAlwaysInteractiveType(cellType)) {
+          focusOrActivateCell()
         }
         return
       }
     }
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [state.lockedCellId, state.editingCellId, state.readOnly, actions, navigateLockedCell, getLockedCellType, getLockedCellValue])
+    document.addEventListener('keydown', handleKeyDown, true)  // 使用捕获阶段，确保先于其他监听器执行
+    return () => document.removeEventListener('keydown', handleKeyDown, true)
+  }, [state.selectedCellId, state.editingCellId, state.readOnly, data.rows, actions, navigateSelectedCell, getSelectedCellType, getSelectedCellValue, getSelectedRowId, focusOrActivateCell])
 
-  // 撤回/恢复快捷键
+  // 复制粘贴快捷键
   // 追踪表格是否处于活跃状态（最近一次 mousedown 在表格内）
   const tableActiveRef = React.useRef(false)
 
@@ -1394,13 +1474,425 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
       }
     }
 
+    const handleCopyPaste = (e: KeyboardEvent) => {
+      if (!tableActiveRef.current) return
+      if (state.editingCellId) return  // 编辑态时不处理，让 contenteditable 自己处理
+      if (state.readOnly) return  // 只读模式不处理
+      const el = document.activeElement as HTMLElement | null
+      if (el?.closest('input, textarea, select')) return
+
+      const mod = e.metaKey || e.ctrlKey
+      const key = e.key.toLowerCase()
+
+      // 复制：Command+C / Ctrl+C
+      if (mod && key === 'c') {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // 根据选中状态决定复制内容
+        let copyText = ''
+
+        // 清空附件复制存储
+        attachmentCopyStorage.files = null
+        attachmentCopyStorage.sourceCellId = null
+
+        // 清空 button 复制存储
+        linkCopyStorage.buttonConfig = null
+        linkCopyStorage.sourceCellId = null
+
+        // 1. 选中列：复制整列数据
+        if (state.selectedColumnId) {
+          const column = state.allColumns.find(c => c.id === state.selectedColumnId)
+          if (column) {
+            // 附件列：不支持整列复制（文件太多）
+            if (column.type === 'attachment') {
+              // 不复制，直接返回
+              return
+            }
+
+            const rows = data.rows
+            const colIndex = data.columns.findIndex(c => c.id === column.id)
+            if (colIndex >= 0) {
+              const values = rows.map(row => {
+                const cell = row.cells[colIndex]
+                const cellValue = cell?.value ?? ''
+
+                // 选择列：提取选项的 label
+                if (column.type === 'select') {
+                  const items = column.options?.items as { value: string, label: string }[] || []
+                  const item = items.find(o => o.value === cellValue)
+                  return item?.label || String(cellValue)
+                }
+
+                return String(cellValue)
+              })
+              copyText = values.join('\n')
+            }
+          }
+        }
+        // 2. 选中行：复制选中行的所有数据
+        else if (state.selectedRows.size > 0) {
+          const rows = data.rows.filter(row => state.selectedRows.has(row.id))
+          const columns = state.allColumns.filter(c => !state.hiddenColumns.has(c.id))
+          const values = rows.map(row => {
+            return columns.map(col => {
+              const colIndex = data.columns.findIndex(c => c.id === col.id)
+              const cell = colIndex >= 0 ? row.cells[colIndex] : null
+              const cellValue = cell?.value ?? ''
+
+              // 选择列：提取选项的 label
+              if (col.type === 'select') {
+                const items = col.options?.items as { value: string, label: string }[] || []
+                const item = items.find(o => o.value === cellValue)
+                return item?.label || String(cellValue)
+              }
+
+              return String(cellValue)
+            }).join('\t')
+          })
+          copyText = values.join('\n')
+        }
+        // 3. 选中单元格：复制单个单元格
+        else if (state.selectedCellId) {
+          // 查找选中单元格
+          for (const row of data.rows) {
+            for (let i = 0; i < row.cells.length; i++) {
+              const cell = row.cells[i]
+              if (!cell) continue
+              if (cell.id === state.selectedCellId) {
+                const column = data.columns[i]
+
+                // 附件列：存储 File 对象到内存
+                if (column?.type === 'attachment') {
+                  const files = cell.attachmentFiles as File[] | undefined
+                  if (files && files.length > 0) {
+                    attachmentCopyStorage.files = files
+                    attachmentCopyStorage.sourceCellId = cell.id
+                    // 同时复制文件名列表到系统剪贴板（作为提示）
+                    copyText = files.map(f => f.name).join(', ')
+                  }
+                  break
+                }
+
+                // Link 列：存储 buttonConfig 到内存
+                if (column?.type === 'link') {
+                  const buttonConfig = cell.buttonConfig as { label?: string, url?: string } | undefined
+                  if (buttonConfig) {
+                    linkCopyStorage.buttonConfig = buttonConfig
+                    linkCopyStorage.sourceCellId = cell.id
+                    // 复制按钮名称或 URL 到剪贴板
+                    copyText = buttonConfig.label || buttonConfig.url || ''
+                  }
+                  break
+                }
+
+                // 选择列：提取选项的 label
+                if (column?.type === 'select') {
+                  const items = column.options?.items as { value: string, label: string }[] || []
+                  const item = items.find(o => o.value === cell.value)
+                  copyText = item?.label || String(cell.value ?? '')
+                  break
+                }
+
+                copyText = String(cell.value ?? '')
+                break
+              }
+            }
+          }
+        }
+
+        if (copyText) {
+          navigator.clipboard.writeText(copyText).catch(() => {
+            // fallback: 使用 execCommand
+            const textarea = document.createElement('textarea')
+            textarea.value = copyText
+            textarea.style.position = 'fixed'
+            textarea.style.opacity = '0'
+            document.body.appendChild(textarea)
+            textarea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textarea)
+          })
+        }
+      }
+
+      // 粘贴：Command+V / Ctrl+V
+      if (mod && key === 'v') {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // 检查是否有附件复制存储
+        const hasAttachmentCopy = attachmentCopyStorage.files && attachmentCopyStorage.files.length > 0
+
+        // 检查是否有 button 复制存储
+        const hasLinkCopy = linkCopyStorage.buttonConfig && (linkCopyStorage.buttonConfig.label || linkCopyStorage.buttonConfig.url)
+
+        navigator.clipboard.readText().then((pasteText) => {
+          // 解析粘贴内容：按换行分割行，按制表符分割列
+          const rows = pasteText ? pasteText.split('\n').map(row => row.split('\t')) : []
+
+          // 1. 选中单元格：粘贴单个或多个值
+          if (state.selectedCellId) {
+            // 查找选中单元格的位置
+            const selectedRowIndex = data.rows.findIndex(row =>
+              row.cells.some(cell => cell.id === state.selectedCellId)
+            )
+            if (selectedRowIndex < 0) return
+
+            const selectedRow = data.rows[selectedRowIndex]
+            if (!selectedRow) return
+            const selectedColIndex = selectedRow.cells.findIndex(
+              cell => cell.id === state.selectedCellId
+            )
+
+            if (selectedColIndex < 0) return
+
+            const targetColumn = data.columns[selectedColIndex]
+
+            // 附件列：检查是否有文件存储
+            if (targetColumn?.type === 'attachment' && hasAttachmentCopy) {
+              const targetCell = selectedRow.cells[selectedColIndex]
+              if (targetCell && targetCell.id) {
+                // 粘贴文件到目标单元格
+                actions.updateCellValue(targetCell.id, { attachmentFiles: attachmentCopyStorage.files })
+              }
+              return  // 附件列粘贴完成后直接返回
+            }
+
+            // Link 列：检查是否有 buttonConfig 存储
+            if (targetColumn?.type === 'link' && hasLinkCopy) {
+              const targetCell = selectedRow.cells[selectedColIndex]
+              if (targetCell && targetCell.id) {
+                // 粘贴 buttonConfig 到目标单元格
+                actions.updateCellValue(targetCell.id, { buttonConfig: linkCopyStorage.buttonConfig })
+              }
+              return  // Link 列粘贴完成后直接返回
+            }
+
+            // 收集所有待粘贴的目标单元格和值
+            const pasteTargets: { rowIndex: number, colIndex: number, value: string }[] = []
+            rows.forEach((rowValues, rowOffset) => {
+              if (!rowValues) return
+              rowValues.forEach((value, colOffset) => {
+                const targetRowIndex = selectedRowIndex + rowOffset
+                const targetColIndex = selectedColIndex + colOffset
+
+                if (targetRowIndex < data.rows.length && targetColIndex < data.columns.length) {
+                  const targetRow = data.rows[targetRowIndex]
+                  if (!targetRow) return
+                  pasteTargets.push({ rowIndex: targetRowIndex, colIndex: targetColIndex, value })
+                }
+              })
+            })
+
+            // 检查是否有选择列需要批量处理
+            const selectColumnsToProcess = new Map<string, { column: ColumnDef, values: string[], targets: { rowIndex: number, colIndex: number }[] }>()
+
+            pasteTargets.forEach(target => {
+              const targetColumn = data.columns[target.colIndex]
+              if (targetColumn?.type === 'select') {
+                const columnId = targetColumn.id
+                if (!selectColumnsToProcess.has(columnId)) {
+                  selectColumnsToProcess.set(columnId, {
+                    column: targetColumn,
+                    values: [],
+                    targets: []
+                  })
+                }
+                const entry = selectColumnsToProcess.get(columnId)!
+                entry.values.push(target.value)
+                entry.targets.push({ rowIndex: target.rowIndex, colIndex: target.colIndex })
+              }
+            })
+
+            // 批量处理选择列
+            selectColumnsToProcess.forEach((entry, columnId) => {
+              const results = handleSelectPasteBatch(entry.values, columnId, entry.column)
+              results.forEach(result => {
+                const target = entry.targets[result.originalIndex]
+                if (!target) return
+                const targetRow = data.rows[target.rowIndex]
+                if (!targetRow) return
+                const targetCell = targetRow.cells[target.colIndex]
+                if (targetCell && targetCell.id) {
+                  actions.updateCellValue(targetCell.id, result.optionValue)
+                }
+              })
+            })
+
+            // 处理非选择列
+            pasteTargets.forEach(target => {
+              const targetColumn = data.columns[target.colIndex]
+              if (targetColumn?.type === 'select') return  // 已批量处理
+              if (targetColumn?.type === 'attachment') return  // 附件列不处理文本粘贴
+
+              // Link 列：粘贴文本作为 label 或 url
+              if (targetColumn?.type === 'link') {
+                const targetRow = data.rows[target.rowIndex]
+                if (!targetRow) return
+                const targetCell = targetRow.cells[target.colIndex]
+                if (targetCell && targetCell.id) {
+                  // 判断粘贴内容是 URL 还是 label
+                  const value = target.value.trim()
+                  const isUrl = /^https?:\/\//.test(value) || /^\/\//.test(value)
+                  if (isUrl) {
+                    actions.updateCellValue(targetCell.id, { buttonConfig: { url: value } })
+                  } else {
+                    actions.updateCellValue(targetCell.id, { buttonConfig: { label: value } })
+                  }
+                }
+                return
+              }
+
+              // 数字列验证
+              if (targetColumn?.type === 'number') {
+                if (target.value && !/^-?\d*\.?\d*$/.test(target.value.trim())) return
+              }
+
+              const targetRow = data.rows[target.rowIndex]
+              if (!targetRow) return
+              const targetCell = targetRow.cells[target.colIndex]
+              if (targetCell && targetCell.id) {
+                actions.updateCellValue(targetCell.id, target.value)
+              }
+            })
+          }
+          // 2. 选中行：粘贴到选中行的对应列
+          else if (state.selectedRows.size > 0) {
+            const selectedRows = data.rows.filter(row => state.selectedRows.has(row.id))
+            const visibleColumns = state.allColumns.filter(c => !state.hiddenColumns.has(c.id))
+
+            // 收集所有待粘贴的目标
+            const pasteTargets: { row: RowData, rowIndex: number, col: ColumnDef, colIndexInData: number, value: string }[] = []
+
+            selectedRows.forEach((row, rowIndex) => {
+              if (!row) return
+              if (rowIndex >= rows.length) return
+              const rowValues = rows[rowIndex]
+              if (!rowValues) return
+              rowValues.forEach((value, colIndex) => {
+                if (colIndex >= visibleColumns.length) return
+                const col = visibleColumns[colIndex]
+                if (!col) return
+
+                const colIndexInData = data.columns.findIndex(c => c.id === col.id)
+                if (colIndexInData >= 0) {
+                  pasteTargets.push({ row, rowIndex, col, colIndexInData, value })
+                }
+              })
+            })
+
+            // 检查是否有选择列需要批量处理
+            const selectColumnsToProcess = new Map<string, { column: ColumnDef, values: string[], targets: { row: RowData, colIndexInData: number }[] }>()
+
+            pasteTargets.forEach(target => {
+              if (target.col.type === 'select') {
+                const columnId = target.col.id
+                if (!selectColumnsToProcess.has(columnId)) {
+                  selectColumnsToProcess.set(columnId, {
+                    column: target.col,
+                    values: [],
+                    targets: []
+                  })
+                }
+                const entry = selectColumnsToProcess.get(columnId)!
+                entry.values.push(target.value)
+                entry.targets.push({ row: target.row, colIndexInData: target.colIndexInData })
+              }
+            })
+
+            // 批量处理选择列
+            selectColumnsToProcess.forEach((entry, columnId) => {
+              const results = handleSelectPasteBatch(entry.values, columnId, entry.column)
+              results.forEach(result => {
+                const target = entry.targets[result.originalIndex]
+                if (!target) return
+                const targetCell = target.row.cells[target.colIndexInData]
+                if (targetCell && targetCell.id) {
+                  actions.updateCellValue(targetCell.id, result.optionValue)
+                }
+              })
+            })
+
+            // 处理非选择列
+            pasteTargets.forEach(target => {
+              if (target.col.type === 'select') return  // 已批量处理
+
+              // 数字列验证
+              if (target.col.type === 'number') {
+                if (target.value && !/^-?\d*\.?\d*$/.test(target.value.trim())) return
+              }
+
+              const targetCell = target.row.cells[target.colIndexInData]
+              if (targetCell && targetCell.id) {
+                actions.updateCellValue(targetCell.id, target.value)
+              }
+            })
+          }
+          // 3. 选中列：粘贴到选中列的对应行
+          else if (state.selectedColumnId) {
+            const column = state.allColumns.find(c => c.id === state.selectedColumnId)
+            if (column) {
+              const colIndex = data.columns.findIndex(c => c.id === column.id)
+              if (colIndex >= 0) {
+                // 收集所有待粘贴的值
+                const pasteValues: string[] = []
+                const pasteTargets: { row: RowData, rowIndex: number }[] = []
+
+                rows.forEach((rowValues, rowIndex) => {
+                  if (rowIndex >= data.rows.length) return
+                  const row = data.rows[rowIndex]
+                  if (!row) return
+                  pasteValues.push(rowValues?.[0] ?? '')
+                  pasteTargets.push({ row, rowIndex })
+                })
+
+                // 选择列：批量处理
+                if (column.type === 'select') {
+                  const results = handleSelectPasteBatch(pasteValues, column.id, column)
+                  results.forEach(result => {
+                    const target = pasteTargets[result.originalIndex]
+                    if (!target) return
+                    const targetCell = target.row.cells[colIndex]
+                    if (targetCell && targetCell.id) {
+                      actions.updateCellValue(targetCell.id, result.optionValue)
+                    }
+                  })
+                } else {
+                  // 非选择列：逐个处理
+                  pasteTargets.forEach((target, index) => {
+                    const value = pasteValues[index]
+
+                    // 数字列验证
+                    if (column.type === 'number') {
+                      if (value && !/^-?\d*\.?\d*$/.test(value.trim())) return
+                    }
+
+                    const targetCell = target.row.cells[colIndex]
+                    if (targetCell && targetCell.id) {
+                      actions.updateCellValue(targetCell.id, value)
+                    }
+                  })
+                }
+              }
+            }
+          }
+        }).catch(() => {
+          // clipboard API 不可用时，尝试使用 paste 事件获取数据
+          // 这种情况下无法主动获取剪贴板内容，需要用户触发 paste 事件
+        })
+      }
+    }
+
     document.addEventListener('mousedown', handleMouseDown)
-    document.addEventListener('keydown', handleUndoRedo)
+    document.addEventListener('keydown', handleUndoRedo, true)  // 使用捕获阶段，确保顺序一致
+    document.addEventListener('keydown', handleCopyPaste, true)
     return () => {
       document.removeEventListener('mousedown', handleMouseDown)
-      document.removeEventListener('keydown', handleUndoRedo)
+      document.removeEventListener('keydown', handleUndoRedo, true)
+      document.removeEventListener('keydown', handleCopyPaste, true)
     }
-  }, [state.editingCellId, actions])
+  }, [state.editingCellId, state.selectedCellId, state.selectedRows, state.selectedColumnId, state.allColumns, state.hiddenColumns, state.readOnly, data.rows, data.columns, actions, getSelectedCellValue, handleSelectPasteBatch])
 
   // 监听 document 点击，点击表格外部时清空选中列和锁定态
   const tableRef = React.useRef<HTMLDivElement>(null)
@@ -1441,7 +1933,7 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
   }, [])
 
   React.useEffect(() => {
-    if (!state.selectedColumnId && !state.lockedCellId) return
+    if (!state.selectedColumnId && !state.selectedCellId) return
 
     let pressedInsideTable = false
 
@@ -1458,14 +1950,14 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
 
     const handlePointerUp = () => {
       if (isHeaderPopoverOpenRef.current) return
-      // 按下位置在表格内 → 无论释放位置在哪，都保持锁定态
+      // 按下位置在表格内 → 无论释放位置在哪，都保持选中态
       if (pressedInsideTable) {
         pressedInsideTable = false
         return
       }
-      // 按下位置在表格外 → 释放时退出锁定态（完整的外部点击）
+      // 按下位置在表格外 → 释放时退出选中态（完整的外部点击）
       actions.selectColumn(null)
-      actions.lockCell(null)
+      actions.selectCell(null)
       pressedInsideTable = false
     }
 
@@ -1475,7 +1967,7 @@ const DataTableInner = React.forwardRef<DataTableHandle, React.HTMLAttributes<HT
       document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [state.selectedColumnId, state.lockedCellId, actions])
+  }, [state.selectedColumnId, state.selectedCellId, actions])
 
   return (
     <HeaderPopoverOpenRefContext.Provider value={isHeaderPopoverOpenRef}>

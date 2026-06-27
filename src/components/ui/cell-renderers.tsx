@@ -3,13 +3,6 @@ import type { CellRendererProps, SelectOptionItem, ButtonCellConfig } from "@/ty
 import { cn } from "@/lib/utils"
 import { Button } from "./button"
 import { Input } from "./input"
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "./select"
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
 import {
   Popover,
@@ -67,138 +60,413 @@ function TruncatedText({ children, className, onDoubleClick, onClick }: { childr
   )
 }
 
-// 文本单元格渲染器
-function TextCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly }: CellRendererProps) {
-  if (isEditing) {
-    return (
-      <input
-        type="text"
-        value={editingValue ?? ""}
-        onChange={(e) => onUpdateEditingValue?.(e.target.value)}
-        onBlur={() => onFinishEdit?.()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault()
-            onFinishEdit?.()
-          }
-          if (e.key === "Escape") {
-            e.preventDefault()
-            onCancelEdit?.()
-          }
-        }}
-        onFocus={(e) => e.target.select()}
-        className="absolute inset-0 bg-transparent border-none outline-none p-2 text-inherit font-inherit overflow-hidden"
-        autoFocus
-      />
-    )
-  }
+// 文本单元格渲染器（使用 contenteditable）
+// 核心思路：选中态 contentEditable=true（隐藏光标），用户按键直接触发 IME
+function TextCellRenderer({ value, isEditing, isSelected, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly, isCellHovering, onSelectCell }: CellRendererProps) {
+  const editorRef = React.useRef<HTMLDivElement>(null)
+  const [open, setOpen] = React.useState(false)
 
-  return (
-    <TruncatedText
-      className={cn("flex-1 w-full min-h-6 truncate", !readOnly && "cursor-pointer")}
-      onDoubleClick={readOnly ? undefined : () => onStartEdit?.()}
-    >
-      {String(value) || " "}
-    </TruncatedText>
-  )
-}
-
-// 数字单元格渲染器（只能输入数字，右对齐）
-function NumberCellRenderer({ value, isEditing, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly }: CellRendererProps) {
-  if (isEditing) {
-    return (
-      <input
-        type="text"
-        value={editingValue ?? ""}
-        onChange={(e) => {
-          // 只允许输入数字、小数点、负号
-          const newValue = e.target.value
-          // 验证格式：可选负号 + 数字 + 可选小数点 + 数字
-          if (newValue === '' || /^-?\d*\.?\d*$/.test(newValue)) {
-            onUpdateEditingValue?.(newValue)
-          }
-        }}
-        onBlur={() => onFinishEdit?.()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault()
-            onFinishEdit?.()
-          }
-          if (e.key === "Escape") {
-            e.preventDefault()
-            onCancelEdit?.()
-          }
-        }}
-        onFocus={(e) => e.target.select()}
-        className="absolute inset-0 bg-transparent border-none outline-none p-2 text-inherit font-inherit overflow-hidden text-right"
-        autoFocus
-      />
-    )
-  }
-
-  return (
-    <TruncatedText
-      className={cn("flex-1 w-full min-h-6 truncate text-right", !readOnly && "cursor-pointer")}
-      onDoubleClick={readOnly ? undefined : () => onStartEdit?.()}
-    >
-      {String(value) || " "}
-    </TruncatedText>
-  )
-}
-
-// 输入框单元格渲染器
-function InputCellRenderer({ value, options, onChange, cellId, isCellHovering }: CellRendererProps) {
-  const [localValue, setLocalValue] = React.useState(String(value))
-  const placeholder = (options?.placeholder as string) || "请输入"
-  const inputRef = React.useRef<HTMLInputElement>(null)
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalValue(e.target.value)
-    onChange?.(e.target.value)
-  }
-
-  // 当单元格被锁定且用户按键时，外部会调用 inputRef.current.focus()
-  // 这里我们暴露一个方法让外部能聚焦到 input
+  // 设置内容、光标和焦点
   React.useEffect(() => {
-    if (isCellHovering && inputRef.current) {
-      // 可以在这里添加额外的聚焦逻辑
-    }
-  }, [isCellHovering])
+    if (editorRef.current) {
+      const el = editorRef.current
 
+      if (isEditing) {
+        // 编辑态：确保内容正确（editingValue 优先）
+        const expectedValue = editingValue ?? String(value)
+        if (el.textContent !== expectedValue) {
+          el.textContent = expectedValue
+        }
+        // 编辑态确保有焦点
+        if (document.activeElement !== el) {
+          el.focus()
+        }
+        // 编辑态：光标移到末尾
+        const selection = window.getSelection()
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        range.collapse(false)  // false = 移到末尾
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      } else if (isSelected) {
+        // 选中态：显示原值
+        if (el.textContent !== String(value)) {
+          el.textContent = String(value)
+        }
+        // 选中态确保有焦点（这样才能接收键盘输入）
+        if (!readOnly && document.activeElement !== el) {
+          el.focus()
+          // 选中态：光标移到末尾（防止输入插入到开头）
+          const selection = window.getSelection()
+          const range = document.createRange()
+          range.selectNodeContents(el)
+          range.collapse(false)  // false = 移到末尾
+          selection?.removeAllRanges()
+          selection?.addRange(range)
+        }
+      }
+    }
+  }, [isEditing, isSelected, editingValue, value, readOnly])
+
+  // 点击图标按钮：进入选中态并打开面板
+  const handleIconButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isSelected) {
+      onSelectCell?.()
+    }
+    setOpen(true)
+  }
+
+  // 选中态或悬停态时显示图标按钮（只读模式隐藏）
+  const showIconButton = !readOnly && (isSelected || isCellHovering)
+
+  // 选中态或编辑态：都渲染 contenteditable + 图标按钮
+  // 关键：选中态 contentEditable=true（隐藏光标），编辑态显示光标
+  if (isEditing || isSelected) {
+    return (
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div
+          ref={editorRef}
+          contentEditable={!readOnly}  // 选中态和编辑态都可编辑
+          suppressContentEditableWarning
+          onClick={(e) => {
+            // 选中态：单击进入编辑态
+            if (!isEditing && isSelected && !readOnly) {
+              e.stopPropagation()
+              onStartEdit?.(String(value))
+            }
+          }}
+          onInput={(e) => {
+            const text = e.currentTarget.textContent || ""
+
+            if (isEditing) {
+              // 编辑态：正常更新值
+              onUpdateEditingValue?.(text)
+            } else if (isSelected && !readOnly) {
+              // 选中态检测到输入 → 进入编辑态，传入当前输入的内容
+              onStartEdit?.(text)
+            }
+          }}
+          onBlur={() => {
+            if (isEditing) {
+              onFinishEdit?.()
+            }
+          }}
+          onKeyDown={(e) => {
+            // 选中态：按空格时阻止默认行为，手动在末尾插入空格
+            if (!isEditing && isSelected) {
+              if (e.key === " ") {
+                e.preventDefault()
+                e.stopPropagation()
+                // 进入编辑态，在末尾插入空格
+                const currentValue = String(value)
+                onStartEdit?.(currentValue + " ")
+                return
+              }
+            }
+            // 编辑态：处理 Enter/Escape
+            if (!isEditing) return
+            if (e.key === "Enter") {
+              e.preventDefault()
+              onFinishEdit?.()
+            }
+            if (e.key === "Escape") {
+              e.preventDefault()
+              onCancelEdit?.()
+            }
+          }}
+          onDoubleClick={(e) => {
+            if (!isEditing && isSelected && !readOnly) {
+              e.stopPropagation()
+              // 双击进入编辑态，不清空内容（使用当前值）
+              onStartEdit?.(String(value))
+            }
+          }}
+          onPaste={(e) => {
+            // 选中态：阻止默认粘贴行为，让全局键盘事件处理
+            if (!isEditing && isSelected) {
+              e.preventDefault()
+              e.stopPropagation()
+              return
+            }
+            // 编辑态：处理粘贴
+            if (isEditing) {
+              e.preventDefault()
+              const text = e.clipboardData.getData("text/plain")
+              document.execCommand("insertText", false, text)
+            }
+          }}
+          className={cn(
+            "flex-1 min-h-6 bg-transparent outline-none text-inherit font-inherit overflow-hidden whitespace-nowrap",
+            // 选中态：隐藏光标，看起来像普通文本
+            isSelected && !isEditing && "caret-transparent cursor-pointer"
+          )}
+        />
+
+        {/* 图标按钮：选中态或悬停态时显示 */}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="iconSm"
+              leftIcon="icon-more"
+              className={cn(
+                "ml-auto shrink-0",
+                !showIconButton && "opacity-0 pointer-events-none"
+              )}
+              onClick={handleIconButtonClick}
+            />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-[184px]">
+            <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+              {/* 面板内容待定 */}
+              <PopoverLabel>文本列设置</PopoverLabel>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    )
+  }
+
+  // 默认态：span 元素 + 图标按钮
   return (
-    <div className="min-w-0 flex-1" data-input-cell={cellId}>
-      <Input
-        ref={inputRef}
-        className="w-full"
-        placeholder={placeholder}
-        variant="basic"
-        size="base"
-        value={localValue}
-        onChange={handleChange}
-      />
+    <div className="flex items-center gap-2 min-w-0 flex-1">
+      <TruncatedText
+        className={cn("flex-1 min-h-6 truncate", !readOnly && "cursor-pointer")}
+        onDoubleClick={readOnly ? undefined : () => onStartEdit?.()}
+      >
+        {String(value) || " "}
+      </TruncatedText>
+
+      {/* 图标按钮：选中态或悬停态时显示 */}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="iconSm"
+            leftIcon="icon-more"
+            className={cn(
+              "ml-auto shrink-0",
+              !showIconButton && "opacity-0 pointer-events-none"
+            )}
+            onClick={handleIconButtonClick}
+          />
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-[184px]">
+          <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+            {/* 面板内容待定 */}
+            <PopoverLabel>文本列设置</PopoverLabel>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }
 
-// 下拉选择单元格渲染器（旧版，保留兼容）
-function SelectCellRenderer({ value, options }: CellRendererProps) {
-  const items = (options?.items as SelectOptionItem[]) ?? []
-  const placeholder = (options?.placeholder as string) || "请选择"
+// 数字单元格渲染器（只能输入数字，左对齐，使用 contenteditable）
+// 核心思路：选中态 contentEditable=true（隐藏光标），用户按键直接触发 IME
+function NumberCellRenderer({ value, isEditing, isSelected, onStartEdit, editingValue, onUpdateEditingValue, onFinishEdit, onCancelEdit, readOnly, isCellHovering, onSelectCell }: CellRendererProps) {
+  const editorRef = React.useRef<HTMLDivElement>(null)
+  const [open, setOpen] = React.useState(false)
 
+  // 设置内容、光标和焦点
+  React.useEffect(() => {
+    if (editorRef.current) {
+      const el = editorRef.current
+
+      if (isEditing) {
+        // 编辑态：确保内容正确
+        const expectedValue = editingValue ?? String(value)
+        if (el.textContent !== expectedValue) {
+          el.textContent = expectedValue
+        }
+        // 编辑态确保有焦点
+        if (document.activeElement !== el) {
+          el.focus()
+        }
+        // 编辑态：光标移到末尾
+        const selection = window.getSelection()
+        const range = document.createRange()
+        range.selectNodeContents(el)
+        range.collapse(false)  // false = 移到末尾
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      } else if (isSelected) {
+        // 选中态：显示原值
+        if (el.textContent !== String(value)) {
+          el.textContent = String(value)
+        }
+        // 选中态确保有焦点（这样才能接收键盘输入）
+        if (!readOnly && document.activeElement !== el) {
+          el.focus()
+        }
+      }
+    }
+  }, [isEditing, isSelected, editingValue, value, readOnly])
+
+  // 点击图标按钮：进入选中态并打开面板
+  const handleIconButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isSelected) {
+      onSelectCell?.()
+    }
+    setOpen(true)
+  }
+
+  // 选中态或悬停态时显示图标按钮（只读模式隐藏）
+  const showIconButton = !readOnly && (isSelected || isCellHovering)
+
+  // 选中态或编辑态：都渲染 contenteditable + 图标按钮
+  if (isEditing || isSelected) {
+    return (
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div
+          ref={editorRef}
+          contentEditable={!readOnly}
+          suppressContentEditableWarning
+          onClick={(e) => {
+            // 选中态：单击进入编辑态
+            if (!isEditing && isSelected && !readOnly) {
+              e.stopPropagation()
+              onStartEdit?.(String(value))
+            }
+          }}
+          onInput={(e) => {
+            const text = e.currentTarget.textContent || ""
+
+            // 验证是否为有效数字格式
+            const isValidNumber = text === '' || /^-?\d*\.?\d*$/.test(text)
+
+            if (!isValidNumber) {
+              // 非法输入：恢复为上一个有效值
+              const validValue = editingValue ?? String(value)
+              e.currentTarget.textContent = validValue
+              return
+            }
+
+            if (isEditing) {
+              // 编辑态：正常更新值
+              onUpdateEditingValue?.(text)
+            } else if (isSelected && !readOnly) {
+              // 选中态检测到有效输入 → 进入编辑态，传入当前内容
+              onStartEdit?.(text)
+            }
+          }}
+          onBlur={() => {
+            if (isEditing) {
+              onFinishEdit?.()
+            }
+          }}
+          onKeyDown={(e) => {
+            // 选中态：按空格时阻止默认行为，手动在末尾插入空格
+            if (!isEditing && isSelected) {
+              if (e.key === " ") {
+                e.preventDefault()
+                e.stopPropagation()
+                // 进入编辑态，在末尾插入空格
+                const currentValue = String(value)
+                onStartEdit?.(currentValue + " ")
+                return
+              }
+            }
+            // 编辑态：处理 Enter/Escape
+            if (!isEditing) return
+            if (e.key === "Enter") {
+              e.preventDefault()
+              onFinishEdit?.()
+            }
+            if (e.key === "Escape") {
+              e.preventDefault()
+              onCancelEdit?.()
+            }
+          }}
+          onDoubleClick={(e) => {
+            if (!isEditing && isSelected && !readOnly) {
+              e.stopPropagation()
+              // 双击进入编辑态，不清空内容（使用当前值）
+              onStartEdit?.(String(value))
+            }
+          }}
+          onPaste={(e) => {
+            // 选中态：阻止默认粘贴行为，让全局键盘事件处理
+            if (!isEditing && isSelected) {
+              e.preventDefault()
+              e.stopPropagation()
+              return
+            }
+            // 编辑态：处理粘贴（验证数字有效性）
+            if (isEditing) {
+              e.preventDefault()
+              const text = e.clipboardData.getData("text/plain")
+              const isValidNumber = text === '' || /^-?\d*\.?\d*$/.test(text)
+              if (isValidNumber) {
+                document.execCommand("insertText", false, text)
+              }
+            }
+          }}
+          className={cn(
+            "flex-1 min-h-6 bg-transparent outline-none text-inherit font-inherit overflow-hidden whitespace-nowrap",
+            // 选中态：隐藏光标，看起来像普通文本
+            isSelected && !isEditing && "caret-transparent cursor-pointer"
+          )}
+        />
+
+        {/* 图标按钮：选中态或悬停态时显示 */}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="iconSm"
+              leftIcon="icon-hashtag"
+              className={cn(
+                "ml-auto shrink-0",
+                !showIconButton && "opacity-0 pointer-events-none"
+              )}
+              onClick={handleIconButtonClick}
+            />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-[184px]">
+            <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+              {/* 面板内容待定 */}
+              <PopoverLabel>数字列设置</PopoverLabel>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    )
+  }
+
+  // 默认态：span 元素 + 图标按钮
   return (
-    <div className="min-w-0 flex-1">
-      <Select>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder={String(value) || placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {items.map((item) => (
-            <SelectItem key={item.value} value={item.value} disabled={item.disabled}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="flex items-center gap-2 min-w-0 flex-1">
+      <TruncatedText
+        className={cn("flex-1 min-h-6 truncate", !readOnly && "cursor-pointer")}
+        onDoubleClick={readOnly ? undefined : () => onStartEdit?.()}
+      >
+        {String(value) || " "}
+      </TruncatedText>
+
+      {/* 图标按钮：选中态或悬停态时显示 */}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="iconSm"
+            leftIcon="icon-hashtag"
+            className={cn(
+              "ml-auto shrink-0",
+              !showIconButton && "opacity-0 pointer-events-none"
+            )}
+            onClick={handleIconButtonClick}
+          />
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-[184px]">
+          <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+            {/* 面板内容待定 */}
+            <PopoverLabel>数字列设置</PopoverLabel>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }
@@ -209,9 +477,9 @@ function SelectEditableCellRenderer({
   options,
   onChange,
   onUpdateColumnOptions,
-  isLocked,
+  isSelected,
   isCellHovering,
-  onLockCell,
+  onSelectCell,
   readOnly
 }: CellRendererProps) {
   const items = (options?.items as SelectOptionItem[]) ?? []
@@ -265,18 +533,18 @@ function SelectEditableCellRenderer({
   // 点击文本区域
   const handleTextClick = () => {
     if (readOnly) return
-    if (!isLocked) {
-      // 默认态单击 → 进入锁定态，不展开面板
-      onLockCell?.()
+    if (!isSelected) {
+      // 默认态单击 → 进入选中态，不展开面板
+      onSelectCell?.()
     }
-    // 锁定态时 PopoverTrigger 已包裹整个区域，点击会自动打开面板
+    // 选中态时 PopoverTrigger 已包裹整个区域，点击会自动打开面板
   }
 
-  // 双击文本区域：进入锁定态 + 展开面板
+  // 双击文本区域：进入选中态 + 展开面板
   const handleTextDoubleClick = () => {
     if (readOnly) return
-    if (!isLocked) {
-      onLockCell?.()
+    if (!isSelected) {
+      onSelectCell?.()
     }
     setOpen(true)
   }
@@ -284,14 +552,14 @@ function SelectEditableCellRenderer({
   // 点击箭头按钮：展开面板
   const handleArrowClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!isLocked) {
-      onLockCell?.()
+    if (!isSelected) {
+      onSelectCell?.()
     }
     setOpen(true)
   }
 
-  // 锁定态或悬停态时显示箭头按钮（只读模式隐藏）
-  const showArrowButton = !readOnly && (isLocked || isCellHovering)
+  // 选中态或悬停态时显示箭头按钮（只读模式隐藏）
+  const showArrowButton = !readOnly && (isSelected || isCellHovering)
 
   return (
     <Popover open={open} onOpenChange={(newOpen) => {
@@ -389,8 +657,8 @@ function SelectEditableCellRenderer({
   )
 }
 
-// 按钮单元格渲染器（每个单元格支持1个按钮）
-function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLockCell, readOnly }: CellRendererProps) {
+// 链接单元格渲染器（每个单元格支持1个链接按钮）
+function LinkCellRenderer({ cellData, isSelected, isCellHovering, onChange, onSelectCell, readOnly }: CellRendererProps) {
   const buttonConfig = cellData?.buttonConfig as ButtonCellConfig | undefined
   const [open, setOpen] = React.useState(false)
 
@@ -407,7 +675,7 @@ function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLo
     return url.startsWith('http://') || url.startsWith('https://') || url.includes('.')
   }
 
-  // 点击按钮：有效链接跳转，无效链接进入锁定态并打开配置面板
+  // 点击按钮：有效链接跳转，无效链接进入选中态并打开配置面板
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (isValidUrl()) {
@@ -419,30 +687,40 @@ function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLo
         window.open(`https://${url}`, '_blank', 'noopener,noreferrer')
       }
     } else {
-      // 无有效链接，进入锁定态并打开配置面板
-      onLockCell?.()
+      // 无有效链接，进入选中态并打开配置面板
+      onSelectCell?.()
       setOpen(true)
     }
   }
 
-  // 点击link按钮：进入锁定态并打开配置面板
+  // 点击link按钮：进入选中态并打开配置面板
   const handleLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!isLocked) {
-      onLockCell?.()
+    if (!isSelected) {
+      onSelectCell?.()
     }
     setOpen(true)
   }
 
-  // 锁定态或悬停态时显示link按钮（只读模式隐藏）
-  const showLinkButton = !readOnly && (isLocked || isCellHovering)
+  // 双击单元格：进入选中态并打开配置面板
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (readOnly) return
+    if (!isSelected) {
+      onSelectCell?.()
+    }
+    setOpen(true)
+  }
+
+  // 选中态或悬停态时显示link按钮（只读模式隐藏）
+  const showLinkButton = !readOnly && (isSelected || isCellHovering)
 
   // 判断是否有按钮配置（名称或超链接不为空）
   const hasButtonConfig = buttonConfig?.label?.trim() || buttonConfig?.url?.trim()
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="flex items-center gap-2 min-w-0 flex-1" onDoubleClick={handleDoubleClick}>
         {/* 按钮区域：只有在有配置时才显示 */}
         {hasButtonConfig && (
           <div className="min-w-0 shrink">
@@ -487,7 +765,7 @@ function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLo
 
       <PopoverContent align="end" className="w-[184px]">
         <div onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-          <ButtonLinkManager
+          <LinkManager
             config={buttonConfig}
             onSave={handleUpdateConfig}
           />
@@ -497,8 +775,8 @@ function ButtonCellRenderer({ cellData, isLocked, isCellHovering, onChange, onLo
   )
 }
 
-// 按钮链接管理面板（单元格级别）
-function ButtonLinkManager({ config, onSave }: {
+// 链接管理面板（单元格级别）
+function LinkManager({ config, onSave }: {
   config?: ButtonCellConfig
   onSave: (config: ButtonCellConfig) => void
 }) {
@@ -529,15 +807,15 @@ function ButtonLinkManager({ config, onSave }: {
         }
       }}
     >
-      {/* 按钮名称 */}
-      <PopoverLabel>按钮名称</PopoverLabel>
+      {/* 链接名 */}
+      <PopoverLabel>链接名</PopoverLabel>
       <div className="px-2 pb-1.5">
         <Input
           variant="basic"
           size="base"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          placeholder="输入按钮名称"
+          placeholder="输入链接名"
           className="w-full"
         />
       </div>
@@ -562,19 +840,10 @@ function ButtonLinkManager({ config, onSave }: {
   )
 }
 
-// 图标单元格渲染器
-function IconCellRenderer({ value, options }: CellRendererProps) {
-  const iconName = (options?.iconName as string) || String(value)
-
-  return (
-    <Button variant="ghost" size="iconBase" leftIcon={iconName} />
-  )
-}
-
 // 附件缩略图组件（只负责缩略图显示，预览由父组件处理）
-function AttachmentThumbnail({ file, isLocked, isPreviewOpen, onPreview, onRemove }: {
+function AttachmentThumbnail({ file, isSelected, isPreviewOpen, onPreview, onRemove }: {
   file: File
-  isLocked: boolean
+  isSelected: boolean
   isPreviewOpen?: boolean
   onPreview?: () => void
   onRemove?: () => void
@@ -666,8 +935,8 @@ function AttachmentThumbnail({ file, isLocked, isPreviewOpen, onPreview, onRemov
 
   return (
     <>
-      {/* 锁定态：Tooltip 显示编辑和删除按钮 */}
-      {isLocked ? (
+      {/* 选中态：Tooltip 显示编辑和删除按钮 */}
+      {isSelected ? (
         <Tooltip>
           <TooltipTrigger asChild>
             {thumbnailContent}
@@ -704,7 +973,7 @@ function AttachmentThumbnail({ file, isLocked, isPreviewOpen, onPreview, onRemov
 }
 
 // 附件单元格渲染器
-function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange, readOnly }: CellRendererProps) {
+function AttachmentCellRenderer({ cellData, isSelected, isCellHovering, onChange, readOnly }: CellRendererProps) {
   // 附件数据存储在 cellData.attachmentFiles 中
   // 不在此处用 ?? [] 兜底，避免每帧创建新空数组引用导致 useEffect 死循环
   const files = cellData?.attachmentFiles as File[] | undefined
@@ -815,8 +1084,8 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange, 
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [previewIndex])
 
-  // 锁定态或悬停态时显示上传按钮（只读模式隐藏）
-  const showUploadButton = !readOnly && (isLocked || isCellHovering)
+  // 选中态或悬停态时显示上传按钮（只读模式隐藏）
+  const showUploadButton = !readOnly && (isSelected || isCellHovering)
 
   return (
     <>
@@ -828,7 +1097,7 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange, 
               <div key={`${file.name}-${file.size}-${index}`} className="relative shrink-0">
                 <AttachmentThumbnail
                   file={file}
-                  isLocked={isLocked ?? false}
+                  isSelected={isSelected ?? false}
                   isPreviewOpen={previewIndex !== null}
                   onPreview={() => handlePreview(index)}
                   onRemove={() => handleRemove(index)}
@@ -917,22 +1186,17 @@ function AttachmentCellRenderer({ cellData, isLocked, isCellHovering, onChange, 
 const defaultCellRenderers: Record<string, React.ComponentType<CellRendererProps>> = {
   text: TextCellRenderer,
   number: NumberCellRenderer,
-  editable: TextCellRenderer, // editable 复用文本渲染器
-  input: InputCellRenderer,
-  select: SelectEditableCellRenderer, // 使用新版可编辑渲染器
-  button: ButtonCellRenderer,
+  select: SelectEditableCellRenderer,
+  link: LinkCellRenderer,
   attachment: AttachmentCellRenderer,
-  icon: IconCellRenderer,
 }
 
 export {
+  TruncatedText,
   TextCellRenderer,
   NumberCellRenderer,
-  InputCellRenderer,
-  SelectCellRenderer,
   SelectEditableCellRenderer,
-  ButtonCellRenderer,
+  LinkCellRenderer,
   AttachmentCellRenderer,
-  IconCellRenderer,
   defaultCellRenderers,
 }

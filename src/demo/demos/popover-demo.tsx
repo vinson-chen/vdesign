@@ -504,13 +504,13 @@ function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "basic", type: "reference" as const, title: "基础", width: 200 },
-    { id: "icon", type: "reference" as const, title: "带图标", width: 200 },
-    { id: "popoverCheckbox", type: "reference" as const, title: "多选", width: 200 },
-    { id: "radio", type: "reference" as const, title: "单选", width: 200 },
-    { id: "submenu", type: "reference" as const, title: "子菜单", width: 200 },
-    { id: "combined", type: "reference" as const, title: "组合", width: 200 },
-    { id: "edit", type: "reference" as const, title: "编辑", width: 200 },
+    { id: "basic", type: "text" as const, title: "基础", width: 200 },
+    { id: "icon", type: "text" as const, title: "带图标", width: 200 },
+    { id: "popoverCheckbox", type: "text" as const, title: "多选", width: 200 },
+    { id: "radio", type: "text" as const, title: "单选", width: 200 },
+    { id: "submenu", type: "text" as const, title: "子菜单", width: 200 },
+    { id: "combined", type: "text" as const, title: "组合", width: 200 },
+    { id: "edit", type: "text" as const, title: "编辑", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {

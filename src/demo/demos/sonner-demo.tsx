@@ -114,7 +114,7 @@ function generateTableData(): TableData {
     { id: "size", type: "text" as const, title: "尺寸", width: 100 },
     ...toastTypes.map((t) => ({
       id: t.id,
-      type: "reference" as const,
+      type: "text" as const,
       title: t.label,
       width: 200,
     })),

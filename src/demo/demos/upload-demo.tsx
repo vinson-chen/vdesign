@@ -81,7 +81,7 @@ function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 100 },
-    { id: "upload", type: "reference" as const, title: "文件上传", width: 400 },
+    { id: "upload", type: "text" as const, title: "文件上传", width: 400 },
   ]
 
   const rows = sizeConfigs.map((size) => ({

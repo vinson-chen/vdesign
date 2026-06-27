@@ -114,7 +114,7 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
     if (isReadOnly) {
       setEditingCellId(null)
       setEditingValue("")
-      setLockedCellId(null)
+      setSelectedCellId(null)
     }
   }, [isReadOnly])
 
@@ -169,7 +169,7 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
     setCollapsedGroups(new Set(snapshot.collapsedGroups))
     setColumnWidths({ ...snapshot.columnWidths })
     setSelectedColumnId(null)
-    setLockedCellId(null)
+    setSelectedCellId(null)
     setEditingCellId(null)
     setEditingValue("")
   }, [])
@@ -192,8 +192,8 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
     restoreSnapshot(snapshot)
   }, [currentSnapshot, restoreSnapshot])
 
-  // 锁定状态（焦点单元格）
-  const [lockedCellId, setLockedCellId] = React.useState<string | null>(null)
+  // 单元格选中状态（焦点单元格）
+  const [selectedCellId, setSelectedCellId] = React.useState<string | null>(null)
 
   // 编辑状态
   const [editingCellId, setEditingCellId] = React.useState<string | null>(null)
@@ -221,8 +221,8 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
       }
       return next
     })
-    // 选中行时清空锁定态
-    setLockedCellId(null)
+    // 选中行时清空单元格选中态
+    setSelectedCellId(null)
   }, [])
 
   const clearSelection = React.useCallback(() => {
@@ -551,7 +551,7 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
     selectAll,
     editingCellId,
     editingValue,
-    lockedCellId,
+    selectedCellId,
     columnWidths,
     allColumns: columns,
     hiddenColumns,
@@ -614,8 +614,7 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
   const getDefaultCellValue = (col: ColumnDef): string | boolean | number => {
     switch (col.type) {
       case "checkbox": return false
-      case "button": return (col.options?.label as string) || ""
-      case "icon": return (col.options?.iconName as string) || ""
+      case "link": return (col.options?.label as string) || ""
       default: return ""
     }
   }
@@ -691,10 +690,10 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
     )
   }, [columns])
 
-  // 锁定单元格（与选中态互斥）
-  const lockCell = React.useCallback((cellId: string | null) => {
-    setLockedCellId(cellId)
-    // 进入锁定态时清空选中态
+  // 选中单元格（与列选中态互斥）
+  const selectCell = React.useCallback((cellId: string | null) => {
+    setSelectedCellId(cellId)
+    // 进入单元格选中态时清空其他选中态
     if (cellId) {
       setSelectedRows(new Set())
       setSelectedColumnId(null)
@@ -707,7 +706,7 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
     // 选中列时清空选中行（互斥）
     if (columnId) {
       setSelectedRows(new Set())
-      setLockedCellId(null)
+      setSelectedCellId(null)
     }
   }, [])
 
@@ -792,7 +791,7 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
       setRows((prev) =>
         prev.map((row) => {
           const newCells: CellData[] = newColumns.map((col) => ({
-            id: `${col.id}-${row.id}`,
+            id: `${row.id}-${col.id}`,  // 统一格式：rowId-columnId
             type: "text",
             value: "",
             width: 200,
@@ -862,7 +861,7 @@ function TableProvider({ data, cellRenderers, readOnly, onCellValueChange, child
     finishEdit,
     cancelEdit,
     updateEditingValue,
-    lockCell,
+    selectCell,
     updateCellValue,
     updateColumnWidth,
     insertColumnLeft,

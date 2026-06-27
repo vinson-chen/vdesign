@@ -177,8 +177,8 @@ function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "horizontal", type: "reference" as const, title: "横向组合", width: 350 },
-    { id: "vertical", type: "reference" as const, title: "纵向组合", width: 200 },
+    { id: "horizontal", type: "text" as const, title: "横向组合", width: 350 },
+    { id: "vertical", type: "text" as const, title: "纵向组合", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {

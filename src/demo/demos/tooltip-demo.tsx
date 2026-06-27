@@ -82,7 +82,7 @@ function generateTableData(): TableData {
     { id: "size", type: "text" as const, title: "尺寸", width: 100 },
     ...sides.map((s) => ({
       id: s.id,
-      type: "reference" as const,
+      type: "text" as const,
       title: s.label,
       width: 140,
     })),

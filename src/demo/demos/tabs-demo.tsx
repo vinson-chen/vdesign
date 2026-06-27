@@ -139,8 +139,8 @@ function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "basic", type: "reference" as const, title: "基础", width: 300 },
-    { id: "line", type: "reference" as const, title: "线型", width: 300 },
+    { id: "basic", type: "text" as const, title: "基础", width: 300 },
+    { id: "line", type: "text" as const, title: "线型", width: 300 },
   ]
 
   const rows = sizeConfigs.map((size) => {

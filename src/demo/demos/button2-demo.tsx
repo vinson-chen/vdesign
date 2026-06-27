@@ -106,11 +106,11 @@ function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "text", type: "reference" as const, title: "text", width: 200 },
-    { id: "leftIcon", type: "reference" as const, title: "leftIcon", width: 200 },
-    { id: "rightIcon", type: "reference" as const, title: "rightIcon", width: 200 },
-    { id: "icon", type: "reference" as const, title: "icon", width: 200 },
-    { id: "disabled", type: "reference" as const, title: "disabled", width: 200 },
+    { id: "text", type: "text" as const, title: "text", width: 200 },
+    { id: "leftIcon", type: "text" as const, title: "leftIcon", width: 200 },
+    { id: "rightIcon", type: "text" as const, title: "rightIcon", width: 200 },
+    { id: "icon", type: "text" as const, title: "icon", width: 200 },
+    { id: "disabled", type: "text" as const, title: "disabled", width: 200 },
   ]
 
   const rows = variantConfigs.flatMap((v) =>
@@ -128,31 +128,31 @@ function generateTableData(): TableData {
           {
             id: `c-text-${v.name}-${size}`,
             value: baseName,
-            type: "button" as const,
+            type: "link" as const,
             options: { variant: v.name, size, label: "按钮" },
           },
           {
             id: `c-left-${v.name}-${size}`,
             value: `${baseName}-left-icon`,
-            type: "button" as const,
+            type: "link" as const,
             options: { variant: v.name, size, leftIcon: "icon-link", label: "按钮" },
           },
           {
             id: `c-right-${v.name}-${size}`,
             value: `${baseName}-right-icon`,
-            type: "button" as const,
+            type: "link" as const,
             options: { variant: v.name, size, rightIcon: "icon-chevron-down", label: "按钮" },
           },
           {
             id: `c-icon-${v.name}-${size}`,
             value: iconName,
-            type: "button" as const,
+            type: "link" as const,
             options: { variant: v.name, size: iconSize, leftIcon: "icon-link" },
           },
           {
             id: `c-disabled-${v.name}-${size}`,
             value: `${baseName}-disabled`,
-            type: "button" as const,
+            type: "link" as const,
             options: { variant: v.name, size, label: "按钮", disabled: true, leftIcon: "icon-load" },
           },
         ],
@@ -174,7 +174,7 @@ export function ButtonPage() {
   const cellRenderers = React.useMemo(
     () => ({
       ...defaultCellRenderers,
-      button: DemoButtonCellRenderer,
+      link: DemoButtonCellRenderer,
     }),
     []
   )

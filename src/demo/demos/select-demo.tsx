@@ -106,10 +106,10 @@ function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "basic", type: "reference" as const, title: "basic", width: 200 },
-    { id: "iconLeft", type: "reference" as const, title: "iconLeft", width: 200 },
-    { id: "invalid", type: "reference" as const, title: "invalid", width: 200 },
-    { id: "disabled", type: "reference" as const, title: "disabled", width: 200 },
+    { id: "basic", type: "text" as const, title: "basic", width: 200 },
+    { id: "iconLeft", type: "text" as const, title: "iconLeft", width: 200 },
+    { id: "invalid", type: "text" as const, title: "invalid", width: 200 },
+    { id: "disabled", type: "text" as const, title: "disabled", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {

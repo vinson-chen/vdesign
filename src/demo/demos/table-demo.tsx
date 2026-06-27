@@ -10,7 +10,7 @@ function TablePage() {
       { id: "col_text", type: "text" as const, title: "文本列", width: 200 },
       { id: "col_number", type: "number" as const, title: "数字列", width: 200 },
       { id: "col_select", type: "select" as const, title: "选择列", width: 200, options: { items: [] } },
-      { id: "col_button", type: "button" as const, title: "链接列", width: 200 },
+      { id: "col_button", type: "link" as const, title: "链接列", width: 200 },
       { id: "col_attachment", type: "attachment" as const, title: "附件列", width: 200 },
     ],
     rows: [

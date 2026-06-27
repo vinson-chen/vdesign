@@ -205,8 +205,8 @@ function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "dialog", type: "reference" as const, title: "弹窗 Dialog", width: 200 },
-    { id: "drawer", type: "reference" as const, title: "抽屉 Drawer", width: 200 },
+    { id: "dialog", type: "text" as const, title: "弹窗 Dialog", width: 200 },
+    { id: "drawer", type: "text" as const, title: "抽屉 Drawer", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {

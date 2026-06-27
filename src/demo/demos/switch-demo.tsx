@@ -82,10 +82,10 @@ function generateTableData(): TableData {
   const columns = [
     { id: "checkbox", type: "checkbox" as const, width: 40 },
     { id: "size", type: "text" as const, title: "尺寸", width: 200 },
-    { id: "unchecked", type: "reference" as const, title: "unchecked", width: 200 },
-    { id: "checked", type: "reference" as const, title: "checked", width: 200 },
-    { id: "disabledUnchecked", type: "reference" as const, title: "disabled unchecked", width: 200 },
-    { id: "disabledChecked", type: "reference" as const, title: "disabled checked", width: 200 },
+    { id: "unchecked", type: "text" as const, title: "unchecked", width: 200 },
+    { id: "checked", type: "text" as const, title: "checked", width: 200 },
+    { id: "disabledUnchecked", type: "text" as const, title: "disabled unchecked", width: 200 },
+    { id: "disabledChecked", type: "text" as const, title: "disabled checked", width: 200 },
   ]
 
   const rows = sizeConfigs.map((size) => {

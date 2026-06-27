@@ -9,14 +9,9 @@ export type CellType =
   | 'text'
   | 'number'
   | 'checkbox'
-  | 'editable'
-  | 'button'
+  | 'link'
   | 'attachment'
-  | 'icon'
-  | 'input'
   | 'select'
-  | 'preview'
-  | 'reference'
 
 // 单元格渲染器 Props 接口
 export interface CellRendererProps {
@@ -26,11 +21,11 @@ export interface CellRendererProps {
   columnId: string
   onChange?: (value: unknown) => void
   isEditing: boolean
-  isLocked?: boolean  // 锁定态（用于按钮列等）
+  isSelected?: boolean  // 单元格选中态（用于 select 列等）
   isCellHovering?: boolean
   readOnly?: boolean
-  onStartEdit?: () => void
-  onLockCell?: () => void  // 进入锁定态
+  onStartEdit?: (initialValue?: string) => void  // 可选参数：进入编辑态时的初始值
+  onSelectCell?: () => void  // 进入单元格选中态
   // 列级别的组件配置（如 Select 的 options、Button 的 buttons）
   options?: Record<string, unknown>
   // 单元格级别的配置（如按钮的 urls）
@@ -123,8 +118,8 @@ export interface TableState {
   // 编辑状态
   editingCellId: string | null
   editingValue: string
-  // 锁定状态（焦点单元格）
-  lockedCellId: string | null
+  // 单元格选中状态（焦点单元格）
+  selectedCellId: string | null
   // 列宽状态
   columnWidths: Record<string, number>
   // 全部列（含隐藏列）
@@ -154,8 +149,8 @@ export interface TableActions {
   finishEdit: () => void
   cancelEdit: () => void
   updateEditingValue: (value: string) => void
-  // 锁定操作
-  lockCell: (cellId: string | null) => void
+  // 单元格选中操作
+  selectCell: (cellId: string | null) => void
   // 单元格值更新
   updateCellValue: (cellId: string, value: unknown) => void
   // 列宽操作
