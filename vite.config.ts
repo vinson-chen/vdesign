@@ -7,7 +7,7 @@ import { defineConfig } from "vite"
 export default defineConfig({
   base: "/vdesign/",
   server: {
-    port: 5173,
+    port: 5174,
   },
   plugins: [react(), tailwindcss()],
   resolve: {

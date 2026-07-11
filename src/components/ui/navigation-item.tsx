@@ -11,9 +11,8 @@ const navigationItemVariants = cva(
         selected: "bg-neutral-1 text-black-85 active:bg-neutral-2",
       },
       size: {
-        base: "h-8 px-2 text-sm leading-6 rounded-md",
-        sm: "h-6 px-1.5 text-xs leading-5 rounded",
-        lg: "h-10 px-3 text-base leading-6 rounded-[10px]",
+        base: "h-8 px-2 text-sm leading-6 rounded-lg gap-1.5",
+        lg: "h-10 px-3 text-base leading-6 rounded-xl gap-2",
       },
     },
     defaultVariants: { variant: "basic", size: "base" },

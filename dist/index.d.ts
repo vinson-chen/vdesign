@@ -8,4 +8,5 @@ export { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, selectTr
 export { NavigationItem, navigationItemVariants } from "./components/ui/navigation-item";
 export { Table, tableVariants } from "./components/ui/table";
 export { DataTable, tableVariants as dataTableVariants } from "./components/ui/data-table";
+export { Card, CardHeader, CardContent, CardFooter } from "./components/ui/card";
 export type { TableData, ColumnDef, CellData, RowData, CellType, CellRendererProps, CellRendererRegistry, CellEditEvent, SelectOptionItem, TextFieldItem } from "./types/table";
