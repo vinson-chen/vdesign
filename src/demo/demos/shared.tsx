@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Drawer,
   DrawerContent,
@@ -35,118 +34,6 @@ export type { SlotConfig }
 // ============================================
 // 公共 Demo 组件
 // ============================================
-
-// 卡片组件
-interface CardProps {
-  children?: React.ReactNode // 示例内容
-  exampleStyle?: React.CSSProperties // 示例区样式
-  onClick?: () => void
-  label?: string // 左侧显示的标签（单按钮场景）
-  copyText?: string // 点击复制的内容（单按钮场景）
-  items?: { label: string; copyText: string }[] // 多按钮场景
-}
-
-export function Card({
-  children,
-  exampleStyle,
-  onClick,
-  label,
-  copyText,
-  items,
-}: CardProps) {
-  const [copied, setCopied] = React.useState(false)
-  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const handleCopy = (text: string, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation()
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    timeoutRef.current = setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <div
-      className="flex h-full flex-col overflow-hidden"
-      style={{
-        border: "1px solid var(--neutral-2)",
-        borderRadius: "var(--radius-card)",
-      }}
-      onClick={onClick}
-    >
-      {/* 示例区 */}
-      <div
-        className="relative min-h-24 p-2"
-        style={{ backgroundColor: "var(--white-100)", ...exampleStyle }}
-      >
-        {children}
-      </div>
-      {/* 参数区 */}
-      <div
-        className="flex flex-grow items-center justify-between p-2"
-        style={{
-          backgroundColor: "var(--white-100)",
-          borderTop: "1px solid var(--neutral-2)",
-        }}
-      >
-        {/* 左侧：单按钮或多按钮 */}
-        {items && items.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {items.map((item) => (
-              <Tooltip key={item.label}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => handleCopy(item.copyText, e)}
-                  >
-                    {item.label}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" size="base">
-                  <p>{item.copyText}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => handleCopy(copyText || label || "", e)}
-              >
-                {label}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" size="base">
-              <p>{copyText || label}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-        {/* 右侧：已复制提示 */}
-        {copied && (
-          <p
-            className="font-mono"
-            style={{
-              color: "var(--neutral-4)",
-              fontSize: "12px",
-              lineHeight: "20px",
-              fontWeight: 400,
-            }}
-          >
-            已复制
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
 
 // 卡片网格容器组件
 interface CardGridProps {

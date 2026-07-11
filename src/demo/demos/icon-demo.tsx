@@ -1,5 +1,7 @@
 import * as React from "react"
-import { Card, CardGrid, SectionTitle } from "./shared"
+import { CardGrid, SectionTitle } from "./shared"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { CopyButton } from "@/components/ui/copy-button"
 import { Input } from "@/components/ui/input"
 
 // 图标分类列表（仅包含实际存在的图标）
@@ -545,21 +547,20 @@ export function IconPage() {
           </h3>
           <CardGrid>
             {category.icons.map((icon) => (
-              <Card
-                key={icon.name}
-                label={icon.name}
-                copyText={icon.name}
-                exampleStyle={{ backgroundColor: "var(--neutral-1)" }}
-              >
-                <div className="flex h-full items-center justify-center">
+              <Card key={icon.name}>
+                <CardContent>
                   <svg
-                    className="icon"
-                    style={{ color: "var(--neutral-5)" }}
-                    aria-hidden="true"
-                  >
-                    <use xlinkHref={`#${icon.name}`} />
-                  </svg>
-                </div>
+                      className="icon"
+                      style={{ color: "var(--neutral-5)" }}
+                      aria-hidden="true"
+                    >
+                      <use xlinkHref={`#${icon.name}`} />
+                    </svg>
+                </CardContent>
+                <CardFooter className="justify-between">
+                  <span className="text-sm text-black-85">{icon.name}</span>
+                  <CopyButton text={icon.name} />
+                </CardFooter>
               </Card>
             ))}
           </CardGrid>

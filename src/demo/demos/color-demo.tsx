@@ -9,7 +9,9 @@ import {
   DEFAULT_SCALE_CONFIG,
   ColorScaleConfig,
 } from "@/lib/color-scale"
-import { Card, CardGrid, SectionTitle, ColorConfigDrawer } from "./shared"
+import { CardGrid, SectionTitle, ColorConfigDrawer } from "./shared"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { CopyButton } from "@/components/ui/copy-button"
 
 // 中性色
 const neutralColors = [
@@ -164,11 +166,16 @@ export function ColorPage() {
           {dynamicBrandColors.map((color, i) => (
             <Card
               key={color.name}
-              label={color.name}
-              copyText={color.name}
-              exampleStyle={{ backgroundColor: `var(--brand-${i + 1})` }}
               onClick={color.name === "brand-5" ? () => setBrandDrawerOpen(true) : undefined}
-            />
+            >
+              <CardContent
+                style={{ backgroundColor: `var(--brand-${i + 1})` }}
+              />
+              <CardFooter className="justify-between">
+                <span className="text-sm text-black-85">{color.name}</span>
+                <CopyButton text={color.name} />
+              </CardFooter>
+            </Card>
           ))}
         </CardGrid>
       </section>
@@ -191,11 +198,16 @@ export function ColorPage() {
           {dynamicSuccessColors.map((color, i) => (
             <Card
               key={color.name}
-              label={color.name}
-              copyText={color.name}
-              exampleStyle={{ backgroundColor: `var(--success-${i + 1})` }}
               onClick={color.name === "success-5" ? () => setSuccessDrawerOpen(true) : undefined}
-            />
+            >
+              <CardContent
+                style={{ backgroundColor: `var(--success-${i + 1})` }}
+              />
+              <CardFooter className="justify-between">
+                <span className="text-sm text-black-85">{color.name}</span>
+                <CopyButton text={color.name} />
+              </CardFooter>
+            </Card>
           ))}
         </CardGrid>
       </section>
@@ -218,11 +230,16 @@ export function ColorPage() {
           {dynamicWarningColors.map((color, i) => (
             <Card
               key={color.name}
-              label={color.name}
-              copyText={color.name}
-              exampleStyle={{ backgroundColor: `var(--warning-${i + 1})` }}
               onClick={color.name === "warning-5" ? () => setWarningDrawerOpen(true) : undefined}
-            />
+            >
+              <CardContent
+                style={{ backgroundColor: `var(--warning-${i + 1})` }}
+              />
+              <CardFooter className="justify-between">
+                <span className="text-sm text-black-85">{color.name}</span>
+                <CopyButton text={color.name} />
+              </CardFooter>
+            </Card>
           ))}
         </CardGrid>
       </section>
@@ -245,11 +262,16 @@ export function ColorPage() {
           {dynamicErrorColors.map((color, i) => (
             <Card
               key={color.name}
-              label={color.name}
-              copyText={color.name}
-              exampleStyle={{ backgroundColor: `var(--error-${i + 1})` }}
               onClick={color.name === "error-5" ? () => setErrorDrawerOpen(true) : undefined}
-            />
+            >
+              <CardContent
+                style={{ backgroundColor: `var(--error-${i + 1})` }}
+              />
+              <CardFooter className="justify-between">
+                <span className="text-sm text-black-85">{color.name}</span>
+                <CopyButton text={color.name} />
+              </CardFooter>
+            </Card>
           ))}
         </CardGrid>
       </section>
@@ -270,7 +292,15 @@ export function ColorPage() {
       <section className="mb-16">
         <CardGrid>
           {neutralColors.map((color, i) => (
-            <Card key={color.name} label={color.name} copyText={color.name} exampleStyle={{ backgroundColor: `var(--neutral-${i + 1})` }} />
+            <Card key={color.name}>
+              <CardContent
+                style={{ backgroundColor: `var(--neutral-${i + 1})` }}
+              />
+              <CardFooter className="justify-between">
+                <span className="text-sm text-black-85">{color.name}</span>
+                <CopyButton text={color.name} />
+              </CardFooter>
+            </Card>
           ))}
         </CardGrid>
       </section>
@@ -279,7 +309,16 @@ export function ColorPage() {
       <section className="mb-16">
         <CardGrid>
           {blackColors.map((color) => (
-            <Card key={color.name} label={color.name} copyText={color.name} exampleStyle={{ backgroundColor: `var(--black-${color.name.split("-")[1]})` }} />
+            <Card key={color.name} className="bg-transparent">
+              <CardContent
+                className="bg-transparent"
+                style={{ backgroundColor: `var(--black-${color.name.split("-")[1]})` }}
+              />
+              <CardFooter className="justify-between bg-white-100">
+                <span className="text-sm text-black-85">{color.name}</span>
+                <CopyButton text={color.name} />
+              </CardFooter>
+            </Card>
           ))}
         </CardGrid>
       </section>
@@ -288,7 +327,16 @@ export function ColorPage() {
       <section className="mb-16">
         <CardGrid>
           {whiteColors.map((color) => (
-            <Card key={color.name} label={color.name} copyText={color.name} exampleStyle={{ backgroundColor: `var(--white-${color.name.split("-")[1]})` }} />
+            <Card key={color.name} className="bg-transparent">
+              <CardContent
+                className="bg-transparent"
+                style={{ backgroundColor: `var(--white-${color.name.split("-")[1]})` }}
+              />
+              <CardFooter className="justify-between bg-white-100">
+                <span className="text-sm text-black-85">{color.name}</span>
+                <CopyButton text={color.name} />
+              </CardFooter>
+            </Card>
           ))}
         </CardGrid>
       </section>
@@ -296,35 +344,59 @@ export function ColorPage() {
       <SectionTitle title="投影" />
       <section>
         <CardGrid cols={6}>
-          <Card label="shadow-1" copyText="shadow-1">
-            <div className="flex h-full items-center justify-center">
+          <Card>
+            <CardContent>
               <div className="size-10 rounded-lg bg-white-100 shadow-[0_0_0_3px_var(--brand-2)]" />
-            </div>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <span className="text-sm text-black-85">shadow-1</span>
+              <CopyButton text="shadow-1" />
+            </CardFooter>
           </Card>
-          <Card label="shadow-2.1" copyText="shadow-2.1">
-            <div className="flex h-full items-center justify-center">
+          <Card>
+            <CardContent>
               <div className="size-10 rounded-lg bg-white-100 shadow-[0_0_4px_1px_var(--black-5),0_8px_8px_0_var(--black-5)]" />
-            </div>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <span className="text-sm text-black-85">shadow-2.1</span>
+              <CopyButton text="shadow-2.1" />
+            </CardFooter>
           </Card>
-          <Card label="shadow-2.2" copyText="shadow-2.2">
-            <div className="flex h-full items-center justify-center">
+          <Card>
+            <CardContent>
               <div className="size-10 rounded-lg bg-white-100 shadow-[0_0_4px_1px_var(--black-5),0_-8px_8px_0_var(--black-5)]" />
-            </div>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <span className="text-sm text-black-85">shadow-2.2</span>
+              <CopyButton text="shadow-2.2" />
+            </CardFooter>
           </Card>
-          <Card label="shadow-2.3" copyText="shadow-2.3">
-            <div className="flex h-full items-center justify-center">
+          <Card>
+            <CardContent>
               <div className="size-10 rounded-lg bg-white-100 shadow-[0_0_4px_1px_var(--black-5),8px_0_8px_0_var(--black-5)]" />
-            </div>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <span className="text-sm text-black-85">shadow-2.3</span>
+              <CopyButton text="shadow-2.3" />
+            </CardFooter>
           </Card>
-          <Card label="shadow-2.4" copyText="shadow-2.4">
-            <div className="flex h-full items-center justify-center">
+          <Card>
+            <CardContent>
               <div className="size-10 rounded-lg bg-white-100 shadow-[0_0_4px_1px_var(--black-5),-8px_0_8px_0_var(--black-5)]" />
-            </div>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <span className="text-sm text-black-85">shadow-2.4</span>
+              <CopyButton text="shadow-2.4" />
+            </CardFooter>
           </Card>
-          <Card label="shadow-3" copyText="shadow-3">
-            <div className="flex h-full items-center justify-center">
+          <Card>
+            <CardContent>
               <div className="size-10 rounded-lg bg-white-100 shadow-[0_0_8px_1px_var(--black-5),0_12px_24px_-4px_var(--black-10)]" />
-            </div>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <span className="text-sm text-black-85">shadow-3</span>
+              <CopyButton text="shadow-3" />
+            </CardFooter>
           </Card>
         </CardGrid>
       </section>

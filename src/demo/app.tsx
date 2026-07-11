@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { ColorPage } from "./demos/color-demo"
 import { TypographyPage } from "./demos/typography-demo"
 import { IconPage } from "./demos/icon-demo"
+import { CardPage } from "./demos/card-demo"
 import { ButtonPage } from "./demos/button2-demo"
 import { InputPage } from "./demos/input-demo"
 import { SelectPage } from "./demos/select-demo"
@@ -25,7 +26,7 @@ import { TablePage } from "./demos/table-demo"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 // 页面类型
-type PageType = "color" | "typography" | "icon" | "button" | "input" | "select" | "navigation" | "tabs" | "radio" | "checkbox" | "switch" | "pagination" | "popover" | "dialog" | "sonner" | "tooltip" | "upload" | "table"
+type PageType = "color" | "typography" | "icon" | "card" | "button" | "input" | "select" | "navigation" | "tabs" | "radio" | "checkbox" | "switch" | "pagination" | "popover" | "dialog" | "sonner" | "tooltip" | "upload" | "table"
 
 function App() {
   const [activePage, setActivePage] = React.useState<PageType>(() => {
@@ -34,6 +35,7 @@ function App() {
       "/color": "color",
       "/typography": "typography",
       "/icon": "icon",
+      "/card": "card",
       "/button": "button",
       "/input": "input",
       "/select": "select",
@@ -93,6 +95,7 @@ function App() {
     { key: "color", label: "颜色 Color" },
     { key: "typography", label: "排版 Typography" },
     { key: "icon", label: "图标 Icon" },
+    { key: "card", label: "卡片 Card" },
     { key: "button", label: "按钮 Button" },
     { key: "input", label: "输入 Input" },
     { key: "select", label: "选择 Select" },
@@ -115,6 +118,7 @@ function App() {
     color: <ColorPage />,
     typography: <TypographyPage />,
     icon: <IconPage />,
+    card: <CardPage />,
     button: <ButtonPage />,
     input: <InputPage />,
     select: <SelectPage />,

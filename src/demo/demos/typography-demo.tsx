@@ -1,4 +1,6 @@
-import { Card, CardGrid, SectionTitle } from "./shared"
+import { CardGrid, SectionTitle } from "./shared"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { CopyButton } from "@/components/ui/copy-button"
 
 // 常规文字字号
 const textSizesRegular = [
@@ -60,23 +62,22 @@ export function TypographyPage() {
       <section className="mb-16">
         <CardGrid>
           {textSizesRegular.map((text) => (
-            <Card
-              key={text.name}
-              label={text.name}
-              copyText={text.name}
-              exampleStyle={{ backgroundColor: "var(--neutral-1)" }}
-            >
-              <div className="flex h-full items-center justify-center">
+            <Card key={text.name}>
+              <CardContent>
                 <span
-                  style={{
-                    color: "var(--neutral-5)",
-                    fontSize: fontSizeMap[text.name],
-                    fontWeight: 400,
-                  }}
-                >
-                  示例文字
-                </span>
-              </div>
+                    style={{
+                      color: "var(--neutral-5)",
+                      fontSize: fontSizeMap[text.name],
+                      fontWeight: 400,
+                    }}
+                  >
+                    示例文字
+                  </span>
+              </CardContent>
+              <CardFooter className="justify-between">
+                <span className="text-sm text-black-85">{text.name}</span>
+                <CopyButton text={text.name} />
+              </CardFooter>
             </Card>
           ))}
         </CardGrid>
@@ -86,23 +87,22 @@ export function TypographyPage() {
       <section className="mb-16">
         <CardGrid>
           {textSizesMedium.map((text) => (
-            <Card
-              key={text.name}
-              label={text.name}
-              copyText={text.name}
-              exampleStyle={{ backgroundColor: "var(--neutral-1)" }}
-            >
-              <div className="flex h-full items-center justify-center">
+            <Card key={text.name}>
+              <CardContent>
                 <span
-                  style={{
-                    color: "var(--neutral-5)",
-                    fontSize: fontSizeMap[text.name],
-                    fontWeight: 500,
-                  }}
-                >
-                  示例文字
-                </span>
-              </div>
+                    style={{
+                      color: "var(--neutral-5)",
+                      fontSize: fontSizeMap[text.name],
+                      fontWeight: 500,
+                    }}
+                  >
+                    示例文字
+                  </span>
+              </CardContent>
+              <CardFooter className="justify-between">
+                <span className="text-sm text-black-85">{text.name}</span>
+                <CopyButton text={text.name} />
+              </CardFooter>
             </Card>
           ))}
         </CardGrid>
@@ -112,23 +112,22 @@ export function TypographyPage() {
       <section>
         <CardGrid>
           {textSizesSemibold.map((text) => (
-            <Card
-              key={text.name}
-              label={text.name}
-              copyText={text.name}
-              exampleStyle={{ backgroundColor: "var(--neutral-1)" }}
-            >
-              <div className="flex h-full items-center justify-center">
+            <Card key={text.name}>
+              <CardContent>
                 <span
-                  style={{
-                    color: "var(--neutral-5)",
-                    fontSize: fontSizeMap[text.name],
-                    fontWeight: 600,
-                  }}
-                >
-                  示例文字
-                </span>
-              </div>
+                    style={{
+                      color: "var(--neutral-5)",
+                      fontSize: fontSizeMap[text.name],
+                      fontWeight: 600,
+                    }}
+                  >
+                    示例文字
+                  </span>
+              </CardContent>
+              <CardFooter className="justify-between">
+                <span className="text-sm text-black-85">{text.name}</span>
+                <CopyButton text={text.name} />
+              </CardFooter>
             </Card>
           ))}
         </CardGrid>
