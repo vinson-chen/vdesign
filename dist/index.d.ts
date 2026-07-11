@@ -6,6 +6,7 @@ export { Cell, CellSlot, cellVariants, slotVariants } from "./components/ui/cell
 export { Checkbox, checkboxVariants } from "./components/ui/checkbox";
 export { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, selectTriggerVariants } from "./components/ui/select";
 export { NavigationItem, navigationItemVariants } from "./components/ui/navigation-item";
+export { EditableNavigationGroup, editableNavigationGroupVariants } from "./components/ui/editable-navigation-group";
 export { Table, tableVariants } from "./components/ui/table";
 export { DataTable, tableVariants as dataTableVariants } from "./components/ui/data-table";
 export { Card, CardHeader, CardContent, CardFooter } from "./components/ui/card";
