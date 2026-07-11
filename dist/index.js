@@ -3300,9 +3300,9 @@ const Kr = (e) => typeof e == "boolean" ? `${e}` : e === 0 ? "0" : e, Yr = Os, O
       variant: {
         primary: "bg-brand-5 text-white-90 hover:bg-brand-6 active:bg-brand-6 data-[state=open]:bg-brand-6",
         outline: "border-neutral-2 bg-white-100 text-black-85 hover:bg-neutral-1 active:bg-neutral-1 data-[state=open]:bg-neutral-1",
-        ghost: "bg-transparent text-black-85 hover:bg-black-5 active:bg-black-5 data-[state=open]:bg-black-5",
+        ghost: "bg-transparent text-black-85 hover:bg-black-5 active:bg-black-5 data-[state=open]:bg-black-5 border-0",
         destructive: "bg-error-1 text-error-5 hover:bg-error-2 active:bg-error-2 data-[state=open]:bg-error-2",
-        link: "bg-transparent text-brand-5 hover:text-brand-6 active:text-brand-6 hover:underline underline-offset-4"
+        link: "bg-transparent text-brand-5 hover:text-brand-6 active:text-brand-6 hover:underline underline-offset-4 border-0"
       },
       size: {
         sm: "h-6 rounded-md px-1.5 text-xs leading-5 gap-1 [&_svg]:size-[14px]",
@@ -8222,9 +8222,8 @@ const fm = Oe(
         selected: "bg-neutral-1 text-black-85 active:bg-neutral-2"
       },
       size: {
-        base: "h-8 px-2 text-sm leading-6 rounded-md gap-1.5",
-        sm: "h-6 px-1.5 text-xs leading-5 rounded gap-1",
-        lg: "h-10 px-3 text-base leading-6 rounded-[10px] gap-2"
+        base: "h-8 px-2 text-sm leading-6 rounded-lg gap-1.5",
+        lg: "h-10 px-3 text-base leading-6 rounded-xl gap-2"
       }
     },
     defaultVariants: { variant: "basic", size: "base" }
