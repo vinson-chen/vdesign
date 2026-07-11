@@ -125,7 +125,7 @@ function EditableNavigationGroup({
           key={i}
           variant={selected === i ? "selected" : "basic"}
           size={s}
-          onClick={() => setSelected(selected === i ? null : i)}
+          onClick={() => setSelected(i)}
           onDoubleClick={(e) => handleDoubleClick(e, i)}
           className={cn("shrink-0 group", prClassMap[s])}
         >

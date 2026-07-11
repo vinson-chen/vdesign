@@ -8313,7 +8313,7 @@ function nv({
           {
             variant: b === O ? "selected" : "basic",
             size: c,
-            onClick: () => w(b === O ? null : O),
+            onClick: () => w(O),
             onDoubleClick: (B) => I(B, O),
             className: ee("shrink-0 group", gm[c]),
             children: [
