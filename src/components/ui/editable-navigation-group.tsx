@@ -23,19 +23,31 @@ function EditableNavigationGroup({
   className,
   size,
   defaultItems = ['选项一', '选项二', '选项三'],
+  selectedIndex,
+  onSelectedChange,
   onItemsChange,
   ...props
 }: React.ComponentProps<"div"> &
   VariantProps<typeof editableNavigationGroupVariants> & {
     defaultItems?: string[]
+    selectedIndex?: number | null
+    onSelectedChange?: (index: number | null) => void
     onItemsChange?: (items: string[]) => void
   }) {
   const s = size ?? "base"
   const [items, setItems] = React.useState(defaultItems)
-  const [selected, setSelected] = React.useState(0)
+  const [internalSelected, setInternalSelected] = React.useState<number | null>(0)
   const [editingIndex, setEditingIndex] = React.useState<number | null>(null)
   const [editValue, setEditValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement>(null)
+
+  const isControlled = selectedIndex !== undefined
+  const selected = isControlled ? selectedIndex : internalSelected
+
+  const setSelected = (index: number | null) => {
+    if (!isControlled) setInternalSelected(index)
+    onSelectedChange?.(index)
+  }
 
   React.useEffect(() => {
     if (editingIndex !== null && inputRef.current) {
@@ -62,8 +74,8 @@ function EditableNavigationGroup({
     setItems((prev) => {
       const next = prev.filter((_, i) => i !== index)
       if (index === selected) {
-        setSelected(Math.min(index, next.length - 1))
-      } else if (index < selected) {
+        setSelected(next.length > 0 ? Math.min(index, next.length - 1) : null)
+      } else if (selected !== null && index < selected) {
         setSelected(selected - 1)
       }
       onItemsChange?.(next)
@@ -113,7 +125,7 @@ function EditableNavigationGroup({
           key={i}
           variant={selected === i ? "selected" : "basic"}
           size={s}
-          onClick={() => setSelected(i)}
+          onClick={() => setSelected(selected === i ? null : i)}
           onDoubleClick={(e) => handleDoubleClick(e, i)}
           className={cn("shrink-0 group", prClassMap[s])}
         >
